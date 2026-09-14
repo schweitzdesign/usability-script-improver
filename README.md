@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Usability Script Improver
 
-## Getting Started
+Submit a usability test script — paste it or upload a Word document — and get expert
+review and AI-powered guidance. Built with Next.js (App Router), TypeScript, Tailwind
+CSS, and shadcn/ui.
 
-First, run the development server:
+## Status: Phase 1 (MVP)
+
+The current scope is intentionally small: one intake form, two ways to submit a script
+(paste text or upload a `.docx`), and a Slack notification when a submission comes in.
+No accounts, no database yet — see [Roadmap](#roadmap) for what's next.
+
+## Getting started
 
 ```bash
+npm install
+cp .env.local.example .env.local   # add your Slack webhook URL
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Slack notifications
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Submissions are posted to Slack via an [Incoming Webhook](https://api.slack.com/messaging/webhooks):
 
-## Learn More
+1. Create a Slack app (or reuse one) at <https://api.slack.com/apps>.
+2. Enable **Incoming Webhooks** and add one for the channel you want submissions in.
+3. Copy the webhook URL into `.env.local` as `SLACK_WEBHOOK_URL`.
 
-To learn more about Next.js, take a look at the following resources:
+If the webhook isn't configured, submissions still succeed locally but a warning is
+logged to the server console instead of posting to Slack.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Tech notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Next.js App Router + TypeScript** for the app itself.
+- **Tailwind CSS v4 + shadcn/ui** (Radix primitives) for accessible, themeable UI
+  components — Tabs, form controls, and alerts all come with keyboard and screen-reader
+  support out of the box.
+- **mammoth** extracts plain text from uploaded `.docx` files server-side.
+- **zod** validates the submission payload on the server.
+- Accessibility target: WCAG 2.2 AA (labeled fields, visible focus states, skip link,
+  live-region status updates, `role="alert"` on errors).
 
-## Deploy on Vercel
+## Roadmap
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Phase 1 (this)**: intake form (paste or upload) → Slack notification.
+- **Phase 2**: conversational intake that drafts a first-pass script from a
+  designer's learning objectives; AI-powered review/guidance on submitted scripts.
+- **Phase 3**: accounts, persistence, and a history of submissions/feedback.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Visual design and branding are still placeholder and will be developed iteratively.
+
+## Deploy
+
+Deploys cleanly to [Vercel](https://vercel.com/new). Set `SLACK_WEBHOOK_URL` as an
+environment variable in the project settings.
