@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Fredoka } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -8,14 +8,27 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+// Brand/display typeface — headlines, wordmark, tagline moments only.
+// Product UI stays on Geist Sans for legibility (see brand brief: brand vs.
+// product typography).
+const fredoka = Fredoka({
+  variable: "--font-fredoka",
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+});
+
 export const metadata: Metadata = {
-  title: "Usability Script Improver",
-  description: "Submit a usability test script for expert review and AI-powered guidance.",
+  title: "POKE — Poke at reality.",
+  description:
+    "POKE turns your rough idea, script, or test plan into a sharper usability test. Ask better questions. Get better answers.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${fredoka.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
         {children}
         <Toaster />

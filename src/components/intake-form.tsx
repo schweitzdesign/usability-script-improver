@@ -93,14 +93,14 @@ export function IntakeForm() {
         <CardContent className="flex flex-col items-center gap-4 py-10 text-center">
           <CheckCircle2 className="h-10 w-10 text-primary" aria-hidden="true" />
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Script received</h2>
+            <h2 className="text-lg font-semibold">Got it.</h2>
             <p className="text-muted-foreground text-sm">
-              Thanks — your usability script is on its way to our team. We&rsquo;ll follow up by email
-              if we have questions.
+              Your script is on its way to our team. We&rsquo;ll follow up by email if we have
+              questions.
             </p>
           </div>
           <Button type="button" variant="outline" onClick={resetForm}>
-            Submit another script
+            Poke another one
           </Button>
         </CardContent>
       </Card>
@@ -110,10 +110,11 @@ export function IntakeForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submit your script</CardTitle>
+        <CardTitle className="font-display text-xl font-semibold">
+          Give us what you&rsquo;ve got.
+        </CardTitle>
         <CardDescription>
-          Paste your script directly, or upload a Word document. We&rsquo;ll review it and get back to
-          you.
+          Paste your script, or upload a document. We&rsquo;ll help make it sharper.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -213,7 +214,7 @@ export function IntakeForm() {
                 Sending…
               </>
             ) : (
-              "Submit script"
+              "Poke it."
             )}
           </Button>
 

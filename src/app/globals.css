@@ -10,6 +10,7 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
+  --font-display: var(--font-fredoka);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,6 +40,14 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* POKE brand palette — usable directly as bg-forest, text-vermilion, etc. */
+  --color-bone: var(--bone);
+  --color-ink: var(--ink);
+  --color-forest: var(--forest);
+  --color-chartreuse: var(--chartreuse);
+  --color-vermilion: var(--vermilion);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -49,72 +58,89 @@
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* POKE brand palette (see brand brief, Direction C — Play) */
+  --bone: #f5f0e8;
+  --ink: #1a1a1a;
+  --forest: #2d5a3d;
+  --chartreuse: #e5f54d;
+  --vermilion: #e85d3f;
+  /* Deepened for AA text contrast — the bright brand vermilion (#e85d3f) is
+     decorative-only; it fails 4.5:1 as small text or button copy. */
+  --vermilion-ink: #b23a24;
+
+  --background: var(--bone);
+  --foreground: var(--ink);
+  --card: #ffffff;
+  --card-foreground: var(--ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --primary: var(--forest);
+  --primary-foreground: var(--bone);
+  --secondary: #ede7d9;
+  --secondary-foreground: var(--ink);
+  --muted: #ede7d9;
+  --muted-foreground: #5c5648;
+  --accent: var(--chartreuse);
+  --accent-foreground: var(--ink);
+  --destructive: var(--vermilion-ink);
+  --border: #e3dcce;
+  --input: #e3dcce;
+  --ring: var(--forest);
+  --chart-1: var(--forest);
+  --chart-2: var(--chartreuse);
+  --chart-3: var(--vermilion);
+  --chart-4: #8a8471;
+  --chart-5: var(--ink);
+  --radius: 0.85rem;
+  --sidebar: var(--bone);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--forest);
+  --sidebar-primary-foreground: var(--bone);
+  --sidebar-accent: var(--chartreuse);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: #e3dcce;
+  --sidebar-ring: var(--forest);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --bone: #f5f0e8;
+  --ink: #1a1a1a;
+  --forest: #4a8a63;
+  --chartreuse: #e5f54d;
+  --vermilion: #e85d3f;
+  --vermilion-ink: #ff8264;
+
+  --background: #161512;
+  --foreground: var(--bone);
+  --card: #201f1b;
+  --card-foreground: var(--bone);
+  --popover: #201f1b;
+  --popover-foreground: var(--bone);
+  --primary: var(--forest);
+  --primary-foreground: #0d1410;
+  --secondary: #2a2822;
+  --secondary-foreground: var(--bone);
+  --muted: #2a2822;
+  --muted-foreground: #b3ab97;
+  --accent: var(--chartreuse);
+  --accent-foreground: var(--ink);
+  --destructive: var(--vermilion-ink);
+  --border: rgba(245, 240, 232, 0.12);
+  --input: rgba(245, 240, 232, 0.16);
+  --ring: var(--forest);
+  --chart-1: var(--forest);
+  --chart-2: var(--chartreuse);
+  --chart-3: var(--vermilion);
+  --chart-4: #a39c86;
+  --chart-5: var(--bone);
+  --sidebar: #201f1b;
+  --sidebar-foreground: var(--bone);
+  --sidebar-primary: var(--forest);
+  --sidebar-primary-foreground: #0d1410;
+  --sidebar-accent: var(--chartreuse);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: rgba(245, 240, 232, 0.12);
+  --sidebar-ring: var(--forest);
 }
 
 @layer base {
