@@ -144,7 +144,7 @@ export function MegaInput({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="hover:text-foreground underline underline-offset-2"
+            className="hover:text-foreground -my-1 py-1 underline underline-offset-2"
           >
             Browse for a .docx file
           </button>
@@ -152,6 +152,8 @@ export function MegaInput({
             ref={fileInputRef}
             type="file"
             accept=".docx"
+            tabIndex={-1}
+            aria-hidden="true"
             className="sr-only"
             onChange={(e) => acceptFile(e.target.files?.[0])}
           />
