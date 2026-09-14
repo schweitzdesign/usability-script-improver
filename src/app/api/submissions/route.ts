@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import mammoth from "mammoth";
 import { notifySlack } from "@/lib/slack";
+import { getSupabaseServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
@@ -87,25 +88,36 @@ export async function POST(request: Request) {
     }
   }
 
+  const supabase = getSupabaseServerClient();
+  let slackNotified = false;
+
   try {
     await notifySlack({ title, name, email, mode, fileName, scriptText });
+    slackNotified = true;
   } catch (error) {
-    console.error("[submissions] Slack notification failed. Submission was not saved:", {
-      title,
+    // Best-effort: persistence below is the source of truth, so a failed
+    // notification shouldn't fail the submission.
+    console.error("[submissions] Slack notification failed:", error);
+  }
+
+  if (supabase) {
+    const { error } = await supabase.from("submissions").insert({
       name,
       email,
+      title,
       mode,
-      fileName,
-      scriptText,
-      error,
+      file_name: fileName ?? null,
+      script_text: scriptText,
+      slack_notified: slackNotified,
     });
-    return NextResponse.json(
-      {
-        error:
-          "We received your script but couldn't deliver the notification. Please try again in a moment.",
-      },
-      { status: 502 }
-    );
+
+    if (error) {
+      console.error("[submissions] Supabase insert failed:", error);
+      return NextResponse.json(
+        { error: "We couldn't save your script. Please try again in a moment." },
+        { status: 502 }
+      );
+    }
   }
 
   return NextResponse.json({ ok: true });
