@@ -5,18 +5,21 @@ const STEPS = [
   {
     color: "bg-forest",
     textColor: "text-bone",
+    rotate: "-rotate-2",
     title: "Drop it.",
     body: "Paste a script, upload a .docx, or just describe what you're testing.",
   },
   {
     color: "bg-vermilion",
     textColor: "text-ink",
+    rotate: "",
     title: "Poke it.",
     body: "We ask the annoying question you skipped — is this a task, or are you fishing for a compliment?",
   },
   {
     color: "bg-chartreuse",
     textColor: "text-ink",
+    rotate: "rotate-2",
     title: "Discover something.",
     body: "Leave with a test built to find out what's true, not confirm what you hoped.",
   },
@@ -53,7 +56,7 @@ export function MarketingSections() {
           {STEPS.map((step, i) => (
             <div key={step.title} className="space-y-3">
               <div
-                className={`${step.color} ${step.textColor} flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold`}
+                className={`${step.color} ${step.textColor} ${step.rotate} border-ink flex h-10 w-10 items-center justify-center rounded-full border-[3px] text-sm font-semibold shadow-[3px_3px_0_var(--ink)]`}
               >
                 {i + 1}
               </div>
@@ -64,9 +67,38 @@ export function MarketingSections() {
         </div>
       </section>
 
+      <div
+        aria-hidden="true"
+        className="h-5 w-full"
+        style={{
+          background:
+            "repeating-conic-gradient(var(--ink) 0% 25%, var(--bone) 0% 50%) 0 0/22px 22px",
+        }}
+      />
+
       {/* Forest pull-quote band */}
-      <section aria-label="POKE's philosophy" className="bg-forest w-full">
-        <blockquote className="text-bone mx-auto max-w-4xl px-6 py-20 text-center sm:py-28">
+      <section aria-label="POKE's philosophy" className="bg-forest relative w-full overflow-hidden">
+        {/* BrandCluster isn't used here directly — its forest-colored circle
+            would blend invisibly into this section's own forest background. */}
+        <svg
+          viewBox="0 0 200 130"
+          aria-hidden="true"
+          className="absolute top-8 right-14 hidden w-28 opacity-90 sm:block"
+        >
+          <circle cx="20" cy="60" r="7" fill="var(--bone)" />
+          <circle cx="82" cy="65" r="45" fill="var(--ink)" opacity="0.25" />
+          <circle
+            cx="118" cy="75" r="27"
+            fill="var(--chartreuse)"
+            style={{ mixBlendMode: "multiply" }}
+          />
+          <circle
+            cx="148" cy="62" r="36"
+            fill="var(--vermilion)"
+            style={{ mixBlendMode: "multiply" }}
+          />
+        </svg>
+        <blockquote className="text-bone relative mx-auto max-w-4xl px-6 py-20 text-center sm:py-28">
           <p className="font-display text-3xl leading-tight font-semibold text-balance sm:text-5xl">
             Most usability tests are designed to validate.
             <br />

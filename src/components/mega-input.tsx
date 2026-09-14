@@ -91,7 +91,7 @@ export function MegaInput({
         }}
         onDrop={handleDrop}
         className={cn(
-          "border-border bg-card relative flex min-h-[22rem] flex-1 flex-col rounded-3xl border-2 p-6 transition-colors sm:p-8",
+          "border-ink bg-card relative flex min-h-[22rem] flex-1 rotate-[-0.4deg] flex-col rounded-3xl border-4 p-6 shadow-[8px_8px_0_var(--ink)] transition-colors sm:p-8",
           isDragging && "border-forest bg-chartreuse/15",
           focused && !isDragging && "border-forest"
         )}
@@ -159,7 +159,12 @@ export function MegaInput({
           />
         </div>
 
-        <Button onClick={onSubmit} disabled={!hasContent || submitting} size="lg">
+        <Button
+          onClick={onSubmit}
+          disabled={!hasContent || submitting}
+          size="lg"
+          className="border-ink hover:rotate-0 rotate-[1.5deg] rounded-full border-[3px] px-7 shadow-[5px_5px_0_var(--ink)] transition-transform disabled:rotate-0 disabled:shadow-none"
+        >
           {submitting ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

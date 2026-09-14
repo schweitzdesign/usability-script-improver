@@ -8,19 +8,19 @@ import { cn } from "@/lib/utils";
 export function BrandCluster({ className }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 200 130"
+      viewBox="0 0 240 150"
       className={cn("w-full", className)}
       aria-hidden="true"
     >
-      <circle cx="20" cy="60" r="6" fill="var(--ink)" />
-      <circle cx="82" cy="65" r="45" fill="var(--forest)" />
+      <circle cx="24" cy="80" r="8" fill="var(--ink)" />
+      <circle cx="96" cy="82" r="50" fill="var(--forest)" />
       <circle
-        cx="118" cy="75" r="27"
+        cx="144" cy="96" r="38"
         fill="var(--chartreuse)"
         style={{ mixBlendMode: "multiply" }}
       />
       <circle
-        cx="148" cy="62" r="36"
+        cx="174" cy="72" r="32"
         fill="var(--vermilion)"
         style={{ mixBlendMode: "multiply" }}
       />

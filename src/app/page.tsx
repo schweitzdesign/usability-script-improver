@@ -5,6 +5,7 @@ import { Wordmark } from "@/components/wordmark";
 import { MegaInput } from "@/components/mega-input";
 import { OutputPanel, type PanelStatus } from "@/components/output-panel";
 import { BrandCluster } from "@/components/brand-cluster";
+import { QuiltSwatch } from "@/components/quilt-swatch";
 import { MarketingSections } from "@/components/marketing-sections";
 import { cn } from "@/lib/utils";
 
@@ -68,8 +69,9 @@ export default function Home() {
       </a>
 
       <header className="border-border border-b">
-        <div className="mx-auto w-full max-w-6xl px-6 py-5">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
           <Wordmark size="sm" />
+          <QuiltSwatch />
         </div>
       </header>
 
