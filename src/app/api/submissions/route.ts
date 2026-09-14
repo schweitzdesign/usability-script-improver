@@ -9,8 +9,8 @@ export const runtime = "nodejs";
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 const metaSchema = z.object({
-  name: z.string().trim().min(1, "Enter your name."),
-  email: z.string().trim().email("Enter a valid email address."),
+  name: z.string().trim().max(200).optional().default(""),
+  email: z.string().trim().max(200).optional().default(""),
   title: z.string().trim().max(200).optional().default(""),
   mode: z.enum(["paste", "upload"]),
 });

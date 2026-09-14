@@ -29,18 +29,18 @@ export async function notifySlack(input: SlackNotificationInput) {
       ? `Uploaded document: *${input.fileName ?? "untitled.docx"}*`
       : "Pasted directly into the form";
 
+  const from = [input.name, input.email].filter(Boolean).join(" ");
+  const fields = [
+    { type: "mrkdwn", text: `*Title*\n${input.title || "(untitled)"}` },
+    ...(from ? [{ type: "mrkdwn", text: `*From*\n${from}` }] : []),
+  ];
+
   const blocks = [
     {
       type: "header",
       text: { type: "plain_text", text: "New usability script submitted", emoji: true },
     },
-    {
-      type: "section",
-      fields: [
-        { type: "mrkdwn", text: `*Title*\n${input.title || "(untitled)"}` },
-        { type: "mrkdwn", text: `*From*\n${input.name} <${input.email}>` },
-      ],
-    },
+    { type: "section", fields },
     { type: "section", text: { type: "mrkdwn", text: sourceLine } },
     {
       type: "section",
