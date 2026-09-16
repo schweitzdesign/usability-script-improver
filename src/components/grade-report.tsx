@@ -10,28 +10,38 @@ const TIER_CLASSES: Record<GradeResult["grade"], string> = {
   "C+": "bg-bone border-ink/20 text-ink",
   C: "bg-bone border-ink/20 text-ink",
   "C-": "bg-bone border-ink/20 text-ink",
-  "D+": "bg-vermilion-ink/10 text-vermilion-ink",
-  D: "bg-vermilion-ink/10 text-vermilion-ink",
-  "D-": "bg-vermilion-ink/10 text-vermilion-ink",
-  F: "bg-vermilion-ink/10 text-vermilion-ink",
+  "D+": "bg-vermilion-ink text-bone",
+  D: "bg-vermilion-ink text-bone",
+  "D-": "bg-vermilion-ink text-bone",
+  F: "bg-vermilion-ink text-bone",
 };
 
-function GradeList({
+const SECTION_BAR_CLASSES = {
+  working: "bg-forest text-bone",
+  leaky: "bg-chartreuse text-ink",
+  critical: "bg-vermilion-ink text-bone",
+} as const;
+
+function GradeSection({
   title,
   items,
-  dotClass,
+  tone,
 }: {
   title: string;
   items: string[];
-  dotClass: string;
+  tone: keyof typeof SECTION_BAR_CLASSES;
 }) {
   return (
     <div>
-      <h3 className="text-xs font-semibold tracking-wide uppercase">{title}</h3>
-      <ul className="mt-2 space-y-1.5">
+      <h3
+        className={`font-display px-6 py-2.5 text-sm font-bold tracking-wide uppercase sm:px-8 ${SECTION_BAR_CLASSES[tone]}`}
+      >
+        {title}
+      </h3>
+      <ul className="flex flex-col gap-3 px-6 py-5 sm:px-8">
         {items.map((item) => (
-          <li key={item} className="flex gap-2.5 text-sm leading-snug">
-            <span className={`${dotClass} mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full`} />
+          <li key={item} className="flex gap-3 text-base leading-snug font-medium sm:text-lg">
+            <span className="bg-ink mt-2 h-2 w-2 shrink-0 rounded-full" />
             <span>{item}</span>
           </li>
         ))}
@@ -42,41 +52,30 @@ function GradeList({
 
 export function GradeReport({ result }: { result: GradeResult }) {
   return (
-    <div className="space-y-5 text-left">
-      <div className="flex items-center gap-4">
+    <div className="divide-ink divide-y-4 text-left">
+      <div className="flex items-center gap-5 px-6 py-6 sm:px-8">
         <span
-          className={`font-display border-ink flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] text-xl font-bold shadow-[4px_4px_0_var(--ink)] ${TIER_CLASSES[result.grade]}`}
+          className={`font-display border-ink flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] text-3xl font-bold shadow-[5px_5px_0_var(--ink)] sm:h-24 sm:w-24 sm:text-4xl ${TIER_CLASSES[result.grade]}`}
         >
           {result.grade}
         </span>
-        <p className="text-base leading-snug font-medium">{result.summary}</p>
+        <p className="font-display text-xl leading-snug font-semibold sm:text-2xl">
+          {result.summary}
+        </p>
       </div>
 
-      {(result.strengths.length > 0 || result.weaknesses.length > 0) && (
-        <div className="grid gap-5 sm:grid-cols-2">
-          {result.strengths.length > 0 && (
-            <GradeList title="What's working" items={result.strengths} dotClass="bg-forest" />
-          )}
-          {result.weaknesses.length > 0 && (
-            <GradeList title="What's leaky" items={result.weaknesses} dotClass="bg-vermilion" />
-          )}
-        </div>
+      {result.strengths.length > 0 && (
+        <GradeSection title="What's working" items={result.strengths} tone="working" />
       )}
-
+      {result.weaknesses.length > 0 && (
+        <GradeSection title="What's leaky" items={result.weaknesses} tone="leaky" />
+      )}
       {result.criticalChanges.length > 0 && (
-        <div className="border-vermilion-ink/30 bg-vermilion-ink/5 border-l-vermilion-ink rounded-xl border border-l-4 p-4">
-          <h3 className="text-vermilion-ink text-xs font-semibold tracking-wide uppercase">
-            Fix before you launch this
-          </h3>
-          <ul className="mt-2 space-y-1.5">
-            {result.criticalChanges.map((item) => (
-              <li key={item} className="flex gap-2.5 text-sm leading-snug">
-                <span className="bg-vermilion-ink mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <GradeSection
+          title="Fix before you launch this"
+          items={result.criticalChanges}
+          tone="critical"
+        />
       )}
     </div>
   );
