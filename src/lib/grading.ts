@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
+import { getAnthropicClient, GRADING_MODEL } from "@/lib/anthropic";
 
 export const GRADE_VALUES = [
   "F", "D-", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+",
@@ -88,23 +89,9 @@ export function isLowInfo(scriptText: string): boolean {
   return false;
 }
 
-/** Canned response for the low-info path — zero LLM calls, same shape as a real grade. */
-export function lowInfoResult(): GradeResult {
-  return {
-    grade: "F",
-    summary: "There's not enough here yet to grade — that's the actual first finding.",
-    strengths: [],
-    weaknesses: [
-      "No learning objective yet, so there's nothing to check the tasks against",
-      "Too little text to tell moderated from unmoderated, or a task from a question",
-    ],
-    criticalChanges: [
-      "Write down the one thing you're trying to learn before writing a single task",
-    ],
-    openingMessage:
-      "Before we grade anything: what's the one decision you're trying to make with this test? Give me that and I'll help you build the rest around it.",
-  };
-}
+/** Shown when input is too thin to grade — this is an onboarding moment, not a fake grade. */
+export const LOW_INFO_OPENING_MESSAGE =
+  "There's not quite enough here yet for me to grade — let's fix that. What's the one decision you're trying to make with this test? Give me your learning objective and I'll help you build the rest around it.";
 
 export const GRADING_SYSTEM_PROMPT = `You are POKE, a usability-research reviewer with the eye of a FAANG-level Principal UX Researcher and the voice of someone who has sat through a thousand rubber-stamp usability tests. You are not here to be nice. You are here to be useful.
 
@@ -129,3 +116,37 @@ VOICE — this copy is read by the designer who wrote the script:
 - Never mean — the goal is a sharper test, not a wounded designer.
 
 Call the submit_grade tool exactly once. The "openingMessage" field is the FIRST LINE of an ongoing conversation with the designer, not a form label or a recap of the grade — write it like you just read their script and are about to talk to them about it. Never write anything that reads like a template ("Let's discuss your script...").`;
+
+export class GradingUnavailableError extends Error {}
+export class GradingFailedError extends Error {}
+
+/**
+ * Runs the real grading call against Claude. Shared by the initial submit
+ * path and the mid-chat auto-grade transition — one place owns the tool
+ * config, the call, and the validation.
+ */
+export async function runGrading(scriptText: string): Promise<GradeResult> {
+  const anthropic = getAnthropicClient();
+  if (!anthropic) {
+    throw new GradingUnavailableError("ANTHROPIC_API_KEY not configured.");
+  }
+
+  const response = await anthropic.messages.create({
+    model: GRADING_MODEL,
+    max_tokens: 1024,
+    system: GRADING_SYSTEM_PROMPT,
+    tools: [GRADE_TOOL],
+    tool_choice: { type: "tool", name: "submit_grade" },
+    messages: [{ role: "user", content: truncateScript(scriptText) }],
+  });
+
+  const toolUse = response.content.find(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
+  );
+  const validated = GradeResultSchema.safeParse(toolUse?.input);
+  if (!validated.success) {
+    console.error("[grading] model returned invalid shape:", validated.error);
+    throw new GradingFailedError("Model returned an invalid grade shape.");
+  }
+  return validated.data;
+}

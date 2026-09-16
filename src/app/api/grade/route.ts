@@ -1,15 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type Anthropic from "@anthropic-ai/sdk";
 import {
-  GRADE_TOOL,
-  GradeResultSchema,
-  GRADING_SYSTEM_PROMPT,
+  GradingFailedError,
+  GradingUnavailableError,
+  LOW_INFO_OPENING_MESSAGE,
   isLowInfo,
-  lowInfoResult,
-  truncateScript,
+  runGrading,
 } from "@/lib/grading";
-import { getAnthropicClient, GRADING_MODEL } from "@/lib/anthropic";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -26,42 +23,33 @@ export async function POST(request: Request) {
   }
   const { scriptText, submissionId } = parsed.data;
 
-  let result;
   if (isLowInfo(scriptText)) {
-    result = lowInfoResult(); // zero-token path
-  } else {
-    const anthropic = getAnthropicClient();
-    if (!anthropic) {
+    // Nothing to grade yet — this is an onboarding moment, not a fake grade.
+    return NextResponse.json({
+      ok: true,
+      graded: false,
+      openingMessage: LOW_INFO_OPENING_MESSAGE,
+    });
+  }
+
+  let result;
+  try {
+    result = await runGrading(scriptText);
+  } catch (error) {
+    if (error instanceof GradingUnavailableError) {
       return NextResponse.json({ error: "Grading isn't configured yet." }, { status: 502 });
     }
-    try {
-      const response = await anthropic.messages.create({
-        model: GRADING_MODEL,
-        max_tokens: 1024,
-        system: GRADING_SYSTEM_PROMPT,
-        tools: [GRADE_TOOL],
-        tool_choice: { type: "tool", name: "submit_grade" },
-        messages: [{ role: "user", content: truncateScript(scriptText) }],
-      });
-      const toolUse = response.content.find(
-        (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
-      );
-      const validated = GradeResultSchema.safeParse(toolUse?.input);
-      if (!validated.success) {
-        console.error("[grade] model returned invalid shape:", validated.error);
-        return NextResponse.json(
-          { error: "Couldn't grade that script. Try again." },
-          { status: 502 }
-        );
-      }
-      result = validated.data;
-    } catch (error) {
-      console.error("[grade] Anthropic call failed:", error);
+    if (error instanceof GradingFailedError) {
       return NextResponse.json(
         { error: "Couldn't grade that script. Try again." },
         { status: 502 }
       );
     }
+    console.error("[grade] Anthropic call failed:", error);
+    return NextResponse.json(
+      { error: "Couldn't grade that script. Try again." },
+      { status: 502 }
+    );
   }
 
   // Best-effort persistence — mirrors the Slack-failure-doesn't-fail-the-request pattern.
@@ -81,5 +69,5 @@ export async function POST(request: Request) {
     if (error) console.error("[grade] Supabase update failed (non-fatal):", error);
   }
 
-  return NextResponse.json({ ok: true, result });
+  return NextResponse.json({ ok: true, graded: true, result });
 }

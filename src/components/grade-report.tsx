@@ -7,13 +7,13 @@ const TIER_CLASSES: Record<GradeResult["grade"], string> = {
   "B+": "bg-chartreuse text-ink",
   B: "bg-chartreuse text-ink",
   "B-": "bg-chartreuse text-ink",
-  "C+": "bg-muted text-muted-foreground",
-  C: "bg-muted text-muted-foreground",
-  "C-": "bg-muted text-muted-foreground",
-  "D+": "bg-destructive/10 text-destructive",
-  D: "bg-destructive/10 text-destructive",
-  "D-": "bg-destructive/10 text-destructive",
-  F: "bg-destructive/10 text-destructive",
+  "C+": "bg-bone border-ink/20 text-ink",
+  C: "bg-bone border-ink/20 text-ink",
+  "C-": "bg-bone border-ink/20 text-ink",
+  "D+": "bg-vermilion-ink/10 text-vermilion-ink",
+  D: "bg-vermilion-ink/10 text-vermilion-ink",
+  "D-": "bg-vermilion-ink/10 text-vermilion-ink",
+  F: "bg-vermilion-ink/10 text-vermilion-ink",
 };
 
 function GradeList({
@@ -43,13 +43,13 @@ function GradeList({
 export function GradeReport({ result }: { result: GradeResult }) {
   return (
     <div className="space-y-5 text-left">
-      <div className="flex items-start gap-4">
+      <div className="flex items-center gap-4">
         <span
-          className={`font-display border-ink flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[3px] text-2xl font-semibold shadow-[4px_4px_0_var(--ink)] ${TIER_CLASSES[result.grade]}`}
+          className={`font-display border-ink flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[3px] text-xl font-bold shadow-[4px_4px_0_var(--ink)] ${TIER_CLASSES[result.grade]}`}
         >
           {result.grade}
         </span>
-        <p className="pt-1 text-base leading-snug font-medium">{result.summary}</p>
+        <p className="text-base leading-snug font-medium">{result.summary}</p>
       </div>
 
       {(result.strengths.length > 0 || result.weaknesses.length > 0) && (
@@ -64,14 +64,14 @@ export function GradeReport({ result }: { result: GradeResult }) {
       )}
 
       {result.criticalChanges.length > 0 && (
-        <div className="border-destructive/30 bg-destructive/5 rounded-xl border p-4">
-          <h3 className="text-destructive text-xs font-semibold tracking-wide uppercase">
+        <div className="border-vermilion-ink/30 bg-vermilion-ink/5 border-l-vermilion-ink rounded-xl border border-l-4 p-4">
+          <h3 className="text-vermilion-ink text-xs font-semibold tracking-wide uppercase">
             Fix before you launch this
           </h3>
           <ul className="mt-2 space-y-1.5">
             {result.criticalChanges.map((item) => (
               <li key={item} className="flex gap-2.5 text-sm leading-snug">
-                <span className="bg-destructive mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
+                <span className="bg-vermilion-ink mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full" />
                 <span>{item}</span>
               </li>
             ))}

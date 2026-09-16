@@ -7,7 +7,6 @@ import { OutputPanel, type PanelStatus } from "@/components/output-panel";
 import { BrandCluster } from "@/components/brand-cluster";
 import { QuiltSwatch } from "@/components/quilt-swatch";
 import { MarketingSections } from "@/components/marketing-sections";
-import { cn } from "@/lib/utils";
 import type { GradeResult } from "@/lib/grading";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -22,6 +21,7 @@ export default function Home() {
     null
   );
   const [gradeResult, setGradeResult] = useState<GradeResult | null>(null);
+  const [onboarding, setOnboarding] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatSending, setChatSending] = useState(false);
 
@@ -78,18 +78,27 @@ export default function Home() {
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
+        graded?: boolean;
         result?: GradeResult;
+        openingMessage?: string;
       };
 
-      if (!res.ok || !data.result) {
+      if (!res.ok || data.graded === undefined) {
         setStatus("grade-error");
         setErrorMessage(data.error ?? "Grading failed.");
         return;
       }
 
-      setGradeResult(data.result);
-      setMessages([{ role: "assistant", content: data.result.openingMessage }]);
-      setStatus("graded");
+      if (data.graded && data.result) {
+        setGradeResult(data.result);
+        setOnboarding(false);
+        setMessages([{ role: "assistant", content: data.result.openingMessage }]);
+      } else {
+        setGradeResult(null);
+        setOnboarding(true);
+        setMessages([{ role: "assistant", content: data.openingMessage ?? "" }]);
+      }
+      setStatus("chatting");
     } catch {
       setStatus("grade-error");
       setErrorMessage("Couldn't reach the server. Check your connection and try again.");
@@ -101,7 +110,7 @@ export default function Home() {
   }
 
   async function handleSendMessage(userText: string) {
-    if (!gradedScript || !gradeResult) return;
+    if (!gradedScript) return;
 
     const nextMessages = [...messages, { role: "user" as const, content: userText }];
     setMessages(nextMessages);
@@ -119,10 +128,19 @@ export default function Home() {
           messages: nextMessages.slice(1),
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { reply?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        reply?: string;
+        graded?: boolean;
+        result?: GradeResult;
+      };
 
       if (res.ok && data.reply) {
         setMessages((m) => [...m, { role: "assistant", content: data.reply as string }]);
+        // Onboarding chat can surface enough detail to auto-grade mid-conversation.
+        if (data.graded && data.result) {
+          setGradeResult(data.result);
+          setOnboarding(false);
+        }
       } else {
         setMessages((m) => [...m, { role: "assistant", content: "That didn't land — try again?" }]);
       }
@@ -139,6 +157,7 @@ export default function Home() {
     setErrorMessage(null);
     setGradedScript(null);
     setGradeResult(null);
+    setOnboarding(false);
     setMessages([]);
   }
 
@@ -159,12 +178,7 @@ export default function Home() {
       </header>
 
       <main className="mx-auto w-full flex-1 px-6 py-10 sm:py-14">
-        <div
-          className={cn(
-            "mx-auto flex w-full flex-col gap-8",
-            panelOpen ? "max-w-6xl" : "max-w-3xl"
-          )}
-        >
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
           {!panelOpen && (
             <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto] sm:text-left">
               <div className="space-y-3 text-center sm:text-left">
@@ -182,29 +196,28 @@ export default function Home() {
           <div
             id="mega-input"
             tabIndex={-1}
-            className={cn(
-              "focus-visible:ring-ring grid flex-1 gap-6 rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-offset-4",
-              panelOpen && "lg:grid-cols-2"
-            )}
+            className="focus-visible:ring-ring flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
           >
-            <MegaInput
-              text={text}
-              onTextChange={setText}
-              file={file}
-              onFileChange={setFile}
-              onSubmit={handleSubmit}
-              submitting={panelOpen && (status === "submitting" || status === "grading")}
-            />
-            {panelOpen && (
+            {panelOpen ? (
               <OutputPanel
                 status={status}
                 errorMessage={errorMessage}
                 grade={gradeResult}
+                onboarding={onboarding}
                 messages={messages}
                 chatSending={chatSending}
                 onReset={handleReset}
                 onRetryGrade={handleRetryGrade}
                 onSendMessage={handleSendMessage}
+              />
+            ) : (
+              <MegaInput
+                text={text}
+                onTextChange={setText}
+                file={file}
+                onFileChange={setFile}
+                onSubmit={handleSubmit}
+                submitting={false}
               />
             )}
           </div>

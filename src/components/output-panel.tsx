@@ -12,12 +12,13 @@ export type PanelStatus =
   | "submission-error" // /api/submissions failed — nothing was saved, full retry
   | "grading" // submission saved; POST /api/grade in flight
   | "grade-error" // submission saved, grading failed — retry grading only
-  | "graded"; // grade + chat visible
+  | "chatting"; // onboarding or graded — chat visible, grade header optional
 
 export function OutputPanel({
   status,
   errorMessage,
   grade,
+  onboarding,
   messages,
   chatSending,
   onReset,
@@ -27,29 +28,37 @@ export function OutputPanel({
   status: PanelStatus;
   errorMessage?: string | null;
   grade?: GradeResult | null;
+  onboarding?: boolean;
   messages?: ChatMessage[];
   chatSending?: boolean;
   onReset: () => void;
   onRetryGrade?: () => void;
   onSendMessage?: (text: string) => void;
 }) {
-  if (status === "graded" && grade) {
+  if (status === "chatting") {
     return (
       <div
         role="status"
-        className="border-ink bg-card animate-in fade-in slide-in-from-right-4 flex min-h-[22rem] flex-1 rotate-[0.4deg] flex-col gap-5 rounded-3xl border-4 p-6 shadow-[8px_8px_0_var(--ink)] duration-300 sm:p-8"
+        className="border-ink bg-card animate-in fade-in slide-in-from-bottom-2 flex min-h-[22rem] flex-1 rotate-[-0.4deg] flex-col overflow-hidden rounded-3xl border-4 shadow-[8px_8px_0_var(--ink)] duration-300"
       >
-        <GradeReport result={grade} />
-        <div className="border-border flex-1 border-t pt-5">
-          <ChatThread
-            messages={messages ?? []}
-            onSend={onSendMessage ?? (() => {})}
-            isSending={Boolean(chatSending)}
-          />
+        {grade && !onboarding && (
+          <div className="border-border animate-in fade-in slide-in-from-top-2 border-b p-6 duration-300 sm:p-8 sm:pb-6">
+            <GradeReport result={grade} />
+          </div>
+        )}
+
+        <div className="flex min-h-0 flex-1 flex-col gap-4 p-6 sm:p-8 sm:pt-6">
+          <div className="min-h-0 flex-1">
+            <ChatThread
+              messages={messages ?? []}
+              onSend={onSendMessage ?? (() => {})}
+              isSending={Boolean(chatSending)}
+            />
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={onReset} className="self-start">
+            Poke another one
+          </Button>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onReset} className="self-start">
-          Poke another one
-        </Button>
       </div>
     );
   }
@@ -57,7 +66,7 @@ export function OutputPanel({
   return (
     <div
       role="status"
-      className="border-border bg-card animate-in fade-in slide-in-from-right-4 flex min-h-[22rem] flex-1 flex-col items-center justify-center rounded-3xl border-2 p-8 text-center duration-300"
+      className="border-border bg-card animate-in fade-in slide-in-from-bottom-2 flex min-h-[22rem] flex-1 flex-col items-center justify-center rounded-3xl border-2 p-8 text-center duration-300"
     >
       {(status === "submitting" || status === "grading") && (
         <div className="flex flex-col items-center gap-3">

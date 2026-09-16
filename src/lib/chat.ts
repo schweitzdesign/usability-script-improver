@@ -9,7 +9,7 @@ export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatRequestSchema = z.object({
   scriptText: z.string().trim().min(1).max(50_000),
-  grade: GradeResultSchema,
+  grade: GradeResultSchema.nullable(),
   messages: z.array(ChatMessageSchema).min(1).max(40),
 });
 
@@ -21,12 +21,15 @@ Reply like a real chat message, not a report: 2-4 short sentences, plain prose. 
 
 export function buildChatSystemPrompt(input: {
   scriptText: string;
-  grade: GradeResult;
-  lowInfo: boolean;
+  grade: GradeResult | null;
 }) {
-  const mode = input.lowInfo
-    ? `This thread started from a low-detail submission (not enough to grade yet). Your job right now is onboarding, not critique: ask for the designer's learning objective if you don't have it yet, then ask AT MOST ONE more clarifying question (moderated vs. unmoderated, or what the prototype/idea actually is — pick whichever is missing and matters most). The moment you have enough to be useful, stop asking questions and produce something concretely improved: a sharper task, a rewritten question, a mini draft outline. Prove value fast — don't interrogate.`
-    : `This script already has a real grade (${input.grade.grade}). Skip onboarding — dig directly into what's actually wrong and how to fix it. Reference specifics from the script, not generic advice.`;
+  const mode = input.grade
+    ? `This script already has a real grade (${input.grade.grade}). Skip onboarding — dig directly into what's actually wrong and how to fix it. Reference specifics from the script, not generic advice.`
+    : `This thread started from a low-detail submission (not enough to grade yet). Your job right now is onboarding, not critique: ask for the designer's learning objective if you don't have it yet, then ask AT MOST ONE more clarifying question (moderated vs. unmoderated, or what the prototype/idea actually is — pick whichever is missing and matters most). The moment you have enough to be useful, stop asking questions and produce something concretely improved: a sharper task, a rewritten question, a mini draft outline. Prove value fast — don't interrogate.`;
 
-  return `${POKE_PERSONALITY}\n\n${mode}\n\nContext for this conversation — the original script and its grade (never repeat this back verbatim, use it as background):\n\nSCRIPT:\n${input.scriptText}\n\nGRADE: ${input.grade.grade} — ${input.grade.summary}\nWEAKNESSES: ${input.grade.weaknesses.join("; ") || "none"}\nCRITICAL CHANGES: ${input.grade.criticalChanges.join("; ") || "none"}`;
+  const gradeContext = input.grade
+    ? `\n\nGRADE: ${input.grade.grade} — ${input.grade.summary}\nWEAKNESSES: ${input.grade.weaknesses.join("; ") || "none"}\nCRITICAL CHANGES: ${input.grade.criticalChanges.join("; ") || "none"}`
+    : "";
+
+  return `${POKE_PERSONALITY}\n\n${mode}\n\nContext for this conversation — the original script${input.grade ? " and its grade" : ""} (never repeat this back verbatim, use it as background):\n\nSCRIPT:\n${input.scriptText}${gradeContext}`;
 }
