@@ -90,6 +90,7 @@ export async function POST(request: Request) {
 
   const supabase = getSupabaseServerClient();
   let slackNotified = false;
+  let id: string | null = null;
 
   try {
     await notifySlack({ title, name, email, mode, fileName, scriptText });
@@ -101,15 +102,19 @@ export async function POST(request: Request) {
   }
 
   if (supabase) {
-    const { error } = await supabase.from("submissions").insert({
-      name,
-      email,
-      title,
-      mode,
-      file_name: fileName ?? null,
-      script_text: scriptText,
-      slack_notified: slackNotified,
-    });
+    const { data, error } = await supabase
+      .from("submissions")
+      .insert({
+        name,
+        email,
+        title,
+        mode,
+        file_name: fileName ?? null,
+        script_text: scriptText,
+        slack_notified: slackNotified,
+      })
+      .select("id")
+      .single();
 
     if (error) {
       console.error("[submissions] Supabase insert failed:", error);
@@ -118,7 +123,10 @@ export async function POST(request: Request) {
         { status: 502 }
       );
     }
+    id = data.id;
   }
 
-  return NextResponse.json({ ok: true });
+  // scriptText is the authoritative extracted/trimmed text — the client
+  // needs it to hand off to /api/grade without re-parsing the .docx.
+  return NextResponse.json({ ok: true, id, scriptText });
 }

@@ -1,5 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 
+type GradingColumns = {
+  grade: string | null;
+  grade_summary: string | null;
+  grade_strengths: string[] | null;
+  grade_weaknesses: string[] | null;
+  grade_critical_changes: string[] | null;
+  graded_at: string | null;
+};
+
 export type SubmissionRow = {
   id: string;
   created_at: string;
@@ -10,14 +19,17 @@ export type SubmissionRow = {
   file_name: string | null;
   script_text: string;
   slack_notified: boolean;
-};
+} & GradingColumns;
+
+type SubmissionInsert = Omit<SubmissionRow, "id" | "created_at" | keyof GradingColumns> &
+  Partial<GradingColumns>;
 
 type Database = {
   public: {
     Tables: {
       submissions: {
         Row: SubmissionRow;
-        Insert: Omit<SubmissionRow, "id" | "created_at">;
+        Insert: SubmissionInsert;
         Update: Partial<Omit<SubmissionRow, "id" | "created_at">>;
         Relationships: [];
       };

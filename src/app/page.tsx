@@ -8,6 +8,8 @@ import { BrandCluster } from "@/components/brand-cluster";
 import { QuiltSwatch } from "@/components/quilt-swatch";
 import { MarketingSections } from "@/components/marketing-sections";
 import { cn } from "@/lib/utils";
+import type { GradeResult } from "@/lib/grading";
+import type { ChatMessage } from "@/lib/chat";
 
 export default function Home() {
   const [text, setText] = useState("");
@@ -15,6 +17,13 @@ export default function Home() {
   const [panelOpen, setPanelOpen] = useState(false);
   const [status, setStatus] = useState<PanelStatus>("submitting");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const [gradedScript, setGradedScript] = useState<{ text: string; id: string | null } | null>(
+    null
+  );
+  const [gradeResult, setGradeResult] = useState<GradeResult | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [chatSending, setChatSending] = useState(false);
 
   async function handleSubmit() {
     if (!text.trim() && !file) return;
@@ -36,20 +45,91 @@ export default function Home() {
 
     try {
       const res = await fetch("/api/submissions", { method: "POST", body: formData });
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        id?: string | null;
+        scriptText?: string;
+      };
 
-      if (!res.ok) {
-        setStatus("error");
+      if (!res.ok || !data.scriptText) {
+        setStatus("submission-error");
         setErrorMessage(data.error ?? "Something went wrong. Please try again.");
         return;
       }
 
-      setStatus("success");
       setText("");
       setFile(null);
+      setGradedScript({ text: data.scriptText, id: data.id ?? null });
+      await runGrade(data.scriptText, data.id ?? null);
     } catch {
-      setStatus("error");
+      setStatus("submission-error");
       setErrorMessage("Couldn't reach the server. Check your connection and try again.");
+    }
+  }
+
+  async function runGrade(scriptText: string, submissionId: string | null) {
+    setStatus("grading");
+    setErrorMessage(null);
+    try {
+      const res = await fetch("/api/grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scriptText, submissionId }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        result?: GradeResult;
+      };
+
+      if (!res.ok || !data.result) {
+        setStatus("grade-error");
+        setErrorMessage(data.error ?? "Grading failed.");
+        return;
+      }
+
+      setGradeResult(data.result);
+      setMessages([{ role: "assistant", content: data.result.openingMessage }]);
+      setStatus("graded");
+    } catch {
+      setStatus("grade-error");
+      setErrorMessage("Couldn't reach the server. Check your connection and try again.");
+    }
+  }
+
+  function handleRetryGrade() {
+    if (gradedScript) runGrade(gradedScript.text, gradedScript.id);
+  }
+
+  async function handleSendMessage(userText: string) {
+    if (!gradedScript || !gradeResult) return;
+
+    const nextMessages = [...messages, { role: "user" as const, content: userText }];
+    setMessages(nextMessages);
+    setChatSending(true);
+
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scriptText: gradedScript.text,
+          grade: gradeResult,
+          // The opening line is UI-seeded, never a real prior turn — drop it
+          // so the first request to the model starts with a user message.
+          messages: nextMessages.slice(1),
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { reply?: string };
+
+      if (res.ok && data.reply) {
+        setMessages((m) => [...m, { role: "assistant", content: data.reply as string }]);
+      } else {
+        setMessages((m) => [...m, { role: "assistant", content: "That didn't land — try again?" }]);
+      }
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", content: "That didn't land — try again?" }]);
+    } finally {
+      setChatSending(false);
     }
   }
 
@@ -57,6 +137,9 @@ export default function Home() {
     setPanelOpen(false);
     setStatus("submitting");
     setErrorMessage(null);
+    setGradedScript(null);
+    setGradeResult(null);
+    setMessages([]);
   }
 
   return (
@@ -113,10 +196,19 @@ export default function Home() {
               file={file}
               onFileChange={setFile}
               onSubmit={handleSubmit}
-              submitting={panelOpen && status === "submitting"}
+              submitting={panelOpen && (status === "submitting" || status === "grading")}
             />
             {panelOpen && (
-              <OutputPanel status={status} errorMessage={errorMessage} onReset={handleReset} />
+              <OutputPanel
+                status={status}
+                errorMessage={errorMessage}
+                grade={gradeResult}
+                messages={messages}
+                chatSending={chatSending}
+                onReset={handleReset}
+                onRetryGrade={handleRetryGrade}
+                onSendMessage={handleSendMessage}
+              />
             )}
           </div>
         </div>

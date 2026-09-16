@@ -8,12 +8,13 @@ usability test. Most usability tests are designed to validate; POKE helps you di
 
 Built with Next.js (App Router), TypeScript, Tailwind CSS, and shadcn/ui.
 
-## Status: Phase 1 (MVP)
+## Status: Phase 2
 
-The current scope is intentionally small: one big paste-or-drop input (no accounts,
-no name/email required), a Supabase row for every submission, and a Slack notification
-when one comes in. Below the input is a marketing pass introducing the product and the
-brand. No AI processing yet — that's Phase 2.
+One big paste-or-drop input (no accounts, no name/email required) → saved to Supabase
+→ Slack notification → graded by Claude (F to A+, on-brand voice, up to 3 each of
+strengths/weaknesses/critical pre-launch changes) → an ongoing chat seeded with the
+grade, so the designer can go deeper. Below the input is a marketing pass introducing
+the product and the brand.
 
 ## Getting started
 
@@ -48,6 +49,25 @@ logged to the server console instead of posting to Slack.
 The service role key is server-only — it's never sent to the browser and must not be
 prefixed with `NEXT_PUBLIC_`. If it isn't configured, submissions still succeed
 locally (with a console warning) so development isn't blocked on it.
+
+Grading persists back onto the same row (`grade`, `grade_summary`,
+`grade_strengths`, `grade_weaknesses`, `grade_critical_changes`, `graded_at`) via
+[`supabase/migrations/0002_add_grading_columns.sql`](supabase/migrations/0002_add_grading_columns.sql) —
+run this too, after `schema.sql`.
+
+### AI grading & chat (Anthropic)
+
+1. Get an API key at <https://console.anthropic.com>.
+2. Add it to `.env.local` as `ANTHROPIC_API_KEY`.
+
+Grading uses forced tool-use (`tool_choice`) against `claude-haiku-4-5` to get
+schema-valid structured JSON — no separate parsing step, validated again server-side
+with zod. Submissions with too little text to grade (a sentence, lorem ipsum, a
+keyboard mash) are detected with a **zero-token heuristic** (`src/lib/grading.ts`,
+`isLowInfo`) and handled entirely in application logic — no model call, and the
+response doubles as the onboarding prompt asking for a learning objective. If
+`ANTHROPIC_API_KEY` isn't configured, grading/chat soft-skip with a console warning,
+same as Slack/Supabase.
 
 ## Brand
 
@@ -97,6 +117,9 @@ more than coverage.
 - **zod** validates the submission payload on the server.
 - **Supabase** (Postgres) persists every submission; the service role key is used
   server-side only, in the API route.
+- **`@anthropic-ai/sdk`** (not the Vercel AI SDK — see git history for why) calls
+  `claude-haiku-4-5` for grading (forced tool-use, structured output) and chat
+  (plain non-streaming replies). Server-side only, in `/api/grade` and `/api/chat`.
 - Accessibility target: WCAG 2.2 AA — labeled inputs, visible focus states (including
   a focusable skip-link target), keyboard-operable file selection alongside
   drag-and-drop, live-region status updates, and every brand color pairing checked for
@@ -104,13 +127,14 @@ more than coverage.
 
 ## Roadmap
 
-- **Phase 1 (this)**: paste-or-drop intake → saved to Supabase → Slack notification.
-- **Phase 2**: conversational intake that drafts a first-pass script from a
-  designer's learning objectives; AI-powered review/guidance on submitted scripts.
-- **Phase 3**: accounts and a history of submissions/feedback per user.
+- **Phase 1**: paste-or-drop intake → saved to Supabase → Slack notification.
+- **Phase 2 (this)**: AI grading (F–A+, strengths/weaknesses/critical changes) →
+  ongoing chat, with a zero-token onboarding path for low-detail submissions.
+- **Phase 3**: accounts and a history of submissions/feedback per user; possibly
+  streaming chat replies.
 
 ## Deploy
 
 Deploys cleanly to [Vercel](https://vercel.com/new). Set `SLACK_WEBHOOK_URL`,
-`SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` as environment variables in the
-project settings.
+`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `ANTHROPIC_API_KEY` as environment
+variables in the project settings.
