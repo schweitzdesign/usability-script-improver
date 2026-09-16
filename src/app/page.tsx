@@ -174,9 +174,6 @@ export default function Home() {
                 <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
                   Poke your users. Learn what&rsquo;s real.
                 </h1>
-                <p className="text-muted-foreground mx-auto max-w-xl text-lg text-balance sm:mx-0">
-                  Ask better questions than &ldquo;would you use this?&rdquo;
-                </p>
               </div>
               <BrandCluster className="hidden w-32 shrink-0 sm:block" />
             </div>

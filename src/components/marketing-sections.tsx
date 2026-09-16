@@ -25,21 +25,6 @@ const STEPS = [
   },
 ];
 
-const ENEMY_LINES = [
-  "Please stop leading the witness.",
-  "“Would you use this?” is not a research plan.",
-  "You already know what you want them to say. That's the problem.",
-];
-
-// Section background is chartreuse — bullet colors are picked to stay
-// visible against it (no chartreuse dots here).
-const PRINCIPLES = [
-  ["Play creates discovery.", "bg-forest"],
-  ["Don't decorate when you can communicate.", "bg-ink"],
-  ["Challenge assumptions.", "bg-vermilion"],
-  ["Preserve usability. Always.", "bg-forest"],
-] as const;
-
 export function MarketingSections() {
   return (
     <>
@@ -149,42 +134,6 @@ export function MarketingSections() {
         </dl>
       </section>
 
-      {/* The enemy: validation theater */}
-      <section className="bg-vermilion w-full">
-        <div className="text-ink mx-auto max-w-4xl px-6 py-16 sm:py-20">
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-            POKE isn&rsquo;t fighting research. It&rsquo;s fighting validation theater.
-          </h2>
-          <p className="mt-4 max-w-2xl text-lg opacity-90">
-            The moments research becomes a ritual performed to justify a decision that was
-            already made. We&rsquo;re willing to call that out.
-          </p>
-          <ul className="mt-8 space-y-3 border-t border-black/15 pt-8">
-            {ENEMY_LINES.map((line) => (
-              <li key={line} className="font-display text-xl font-medium sm:text-2xl">
-                {line}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      {/* Principles */}
-      <section className="bg-chartreuse w-full">
-        <div className="text-ink mx-auto max-w-5xl px-6 py-16 sm:py-20">
-          <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-            How POKE thinks.
-          </h2>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2">
-            {PRINCIPLES.map(([line, dot]) => (
-              <li key={line} className="flex items-start gap-3 text-lg">
-                <span className={`${dot} mt-2 h-2.5 w-2.5 shrink-0 rounded-full`} />
-                {line}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
     </>
   );
 }
