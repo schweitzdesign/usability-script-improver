@@ -172,7 +172,7 @@ export default function Home() {
                   Poke at reality.
                 </p>
                 <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-                  Your test could be better. Let&rsquo;s poke at it.
+                  Poke your users. Learn what&rsquo;s real.
                 </h1>
                 <p className="text-muted-foreground mx-auto max-w-xl text-lg text-balance sm:mx-0">
                   Ask better questions than &ldquo;would you use this?&rdquo;

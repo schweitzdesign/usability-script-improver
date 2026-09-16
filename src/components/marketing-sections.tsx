@@ -47,35 +47,6 @@ export function MarketingSections() {
         <ShapeDivider />
       </div>
 
-      {/* How it works */}
-      <section className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-20">
-        <h2 className="font-display mb-10 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Three moves.
-        </h2>
-        <div className="grid gap-8 sm:grid-cols-3">
-          {STEPS.map((step, i) => (
-            <div key={step.title} className="space-y-3">
-              <div
-                className={`${step.color} ${step.textColor} ${step.rotate} border-ink flex h-10 w-10 items-center justify-center rounded-full border-[3px] text-sm font-semibold shadow-[3px_3px_0_var(--ink)]`}
-              >
-                {i + 1}
-              </div>
-              <h3 className="font-display text-xl font-semibold">{step.title}</h3>
-              <p className="text-muted-foreground">{step.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <div
-        aria-hidden="true"
-        className="h-5 w-full"
-        style={{
-          background:
-            "repeating-conic-gradient(var(--ink) 0% 25%, var(--bone) 0% 50%) 0 0/22px 22px",
-        }}
-      />
-
       {/* Forest pull-quote band */}
       <section aria-label="POKE's philosophy" className="bg-forest relative w-full overflow-hidden">
         {/* BrandCluster isn't used here directly — its forest-colored circle
@@ -109,6 +80,35 @@ export function MarketingSections() {
             thinking harder about whether they work.
           </p>
         </blockquote>
+      </section>
+
+      <div
+        aria-hidden="true"
+        className="h-5 w-full"
+        style={{
+          background:
+            "repeating-conic-gradient(var(--ink) 0% 25%, var(--bone) 0% 50%) 0 0/22px 22px",
+        }}
+      />
+
+      {/* How it works */}
+      <section className="mx-auto w-full max-w-5xl px-6 py-16 sm:py-20">
+        <h2 className="font-display mb-10 text-3xl font-semibold tracking-tight sm:text-4xl">
+          Three moves.
+        </h2>
+        <div className="grid gap-8 sm:grid-cols-3">
+          {STEPS.map((step, i) => (
+            <div key={step.title} className="space-y-3">
+              <div
+                className={`${step.color} ${step.textColor} ${step.rotate} border-ink flex h-10 w-10 items-center justify-center rounded-full border-[3px] text-sm font-semibold shadow-[3px_3px_0_var(--ink)]`}
+              >
+                {i + 1}
+              </div>
+              <h3 className="font-display text-xl font-semibold">{step.title}</h3>
+              <p className="text-muted-foreground">{step.body}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Who it's for */}

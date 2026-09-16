@@ -37,10 +37,10 @@ export function OutputPanel({
     return (
       <div
         role="status"
-        className="border-border bg-card animate-in fade-in slide-in-from-right-4 flex min-h-[22rem] flex-1 flex-col gap-4 rounded-3xl border-2 p-6 duration-300 sm:p-8"
+        className="border-ink bg-card animate-in fade-in slide-in-from-right-4 flex min-h-[22rem] flex-1 rotate-[0.4deg] flex-col gap-5 rounded-3xl border-4 p-6 shadow-[8px_8px_0_var(--ink)] duration-300 sm:p-8"
       >
         <GradeReport result={grade} />
-        <div className="border-border flex-1 border-t pt-4">
+        <div className="border-border flex-1 border-t pt-5">
           <ChatThread
             messages={messages ?? []}
             onSend={onSendMessage ?? (() => {})}
