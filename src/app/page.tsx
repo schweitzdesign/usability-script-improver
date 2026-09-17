@@ -8,6 +8,13 @@ import { OutputPanel, type PanelStatus } from "@/components/output-panel";
 import { BrandCluster } from "@/components/brand-cluster";
 import { MarketingSections } from "@/components/marketing-sections";
 import { DURATION_BASE, EASE_OUT, STAGGER_CONTAINER, FADE_UP, POP_IN } from "@/lib/motion";
+import { DevPreviewPanel, type PreviewKind } from "@/components/dev-preview-panel";
+import {
+  PREVIEW_SCRIPT_TEXT,
+  GRADE_FIXTURES,
+  LOW_INFO_FIRST_MESSAGES,
+  LOW_INFO_LONG_MESSAGES,
+} from "@/lib/preview-fixtures";
 import type { GradeResult } from "@/lib/grading";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -163,6 +170,27 @@ export default function Home() {
     setMessages([]);
   }
 
+  // Dev-only: jumps straight to a canned state, no /api/grade or /api/chat
+  // call. See src/lib/preview-fixtures.ts and dev-preview-panel.tsx.
+  function applyPreview(kind: PreviewKind) {
+    setPanelOpen(true);
+    setStatus("chatting");
+    setErrorMessage(null);
+    setGradedScript({ text: PREVIEW_SCRIPT_TEXT, id: null });
+
+    if (kind === "low-info-first" || kind === "low-info-long") {
+      setGradeResult(null);
+      setOnboarding(true);
+      setMessages(kind === "low-info-first" ? LOW_INFO_FIRST_MESSAGES : LOW_INFO_LONG_MESSAGES);
+      return;
+    }
+
+    const result = GRADE_FIXTURES[kind];
+    setGradeResult(result);
+    setOnboarding(false);
+    setMessages([{ role: "assistant", content: result.openingMessage }]);
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       <a
@@ -268,6 +296,8 @@ export default function Home() {
           <p className="text-muted-foreground text-sm">Poke at reality.</p>
         </div>
       </footer>
+
+      <DevPreviewPanel onApply={applyPreview} onClear={handleReset} />
     </div>
   );
 }
