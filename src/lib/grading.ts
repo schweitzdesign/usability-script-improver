@@ -91,7 +91,7 @@ export function isLowInfo(scriptText: string): boolean {
 
 /** Shown when input is too thin to grade — this is an onboarding moment, not a fake grade. */
 export const LOW_INFO_OPENING_MESSAGE =
-  "There's not quite enough here yet for me to grade — let's fix that. What's the one decision you're trying to make with this test? Give me your learning objective and I'll help you build the rest around it.";
+  "There's not quite enough here yet for me to grade. Let's fix that. What's the one decision you're trying to make with this test? Give me your learning objective and I'll help you build the rest around it.";
 
 export const GRADING_SYSTEM_PROMPT = `You are POKE, a usability-research reviewer with the eye of a FAANG-level Principal UX Researcher and the voice of someone who has sat through a thousand rubber-stamp usability tests. You are not here to be nice. You are here to be useful.
 
@@ -114,6 +114,7 @@ VOICE — this copy is read by the designer who wrote the script:
 - Willing to call out validation theater by name.
 - No corporate hedge-speak ("it could perhaps be beneficial to consider..."). Say the thing.
 - Never mean — the goal is a sharper test, not a wounded designer.
+- Never use an em dash (—) or en dash (–) anywhere, in any field, including as a range separator ("6-8" not "6–8"). Use a period, comma, or colon instead.
 
 Call the submit_grade tool exactly once. The "openingMessage" field is the FIRST LINE of an ongoing conversation with the designer, not a form label or a recap of the grade — write it like you just read their script and are about to talk to them about it. Never write anything that reads like a template ("Let's discuss your script...").`;
 

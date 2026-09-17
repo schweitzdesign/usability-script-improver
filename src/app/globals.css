@@ -60,7 +60,7 @@
 
 :root {
   /* POKE brand palette (see brand brief, Direction C — Play) */
-  --bone: #f5f0e8;
+  --bone: #f6f7e9; /* chartreuse-tinted paper, not generic warm cream */
   --ink: #1a1a1a;
   --forest: #2d5a3d;
   --chartreuse: #e5f54d;
@@ -68,6 +68,10 @@
   /* Deepened for AA text contrast — the bright brand vermilion (#e85d3f) is
      decorative-only; it fails 4.5:1 as small text or button copy. */
   --vermilion-ink: #b23a24;
+  /* Shared easing for plain-CSS transitions (hover/focus color changes) so
+     they feel like the same system as the Motion-driven animations, which
+     use the equivalent curve via EASE_OUT in src/lib/motion.ts. */
+  --ease-brand: cubic-bezier(0.16, 1, 0.3, 1);
 
   --background: var(--bone);
   --foreground: var(--ink);

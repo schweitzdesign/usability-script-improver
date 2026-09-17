@@ -56,7 +56,7 @@ export async function POST(request: Request) {
     }
     if (file.size > MAX_FILE_BYTES) {
       return NextResponse.json(
-        { error: "That file is larger than 5MB — trim it down and try again." },
+        { error: "That file is larger than 5MB. Trim it down and try again." },
         { status: 400 }
       );
     }

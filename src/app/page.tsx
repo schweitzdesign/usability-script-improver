@@ -1,16 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Wordmark } from "@/components/wordmark";
 import { MegaInput } from "@/components/mega-input";
 import { OutputPanel, type PanelStatus } from "@/components/output-panel";
 import { BrandCluster } from "@/components/brand-cluster";
-import { QuiltSwatch } from "@/components/quilt-swatch";
 import { MarketingSections } from "@/components/marketing-sections";
+import { DURATION_BASE, EASE_OUT, STAGGER_CONTAINER, FADE_UP, POP_IN } from "@/lib/motion";
 import type { GradeResult } from "@/lib/grading";
 import type { ChatMessage } from "@/lib/chat";
 
 export default function Home() {
+  const reduceMotion = useReducedMotion();
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -142,10 +144,10 @@ export default function Home() {
           setOnboarding(false);
         }
       } else {
-        setMessages((m) => [...m, { role: "assistant", content: "That didn't land — try again?" }]);
+        setMessages((m) => [...m, { role: "assistant", content: "That didn't land. Try again?" }]);
       }
     } catch {
-      setMessages((m) => [...m, { role: "assistant", content: "That didn't land — try again?" }]);
+      setMessages((m) => [...m, { role: "assistant", content: "That didn't land. Try again?" }]);
     } finally {
       setChatSending(false);
     }
@@ -171,26 +173,40 @@ export default function Home() {
       </a>
 
       <header className="border-border border-b">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
-          <Wordmark size="sm" />
-          <QuiltSwatch />
+        <div className="mx-auto flex w-full max-w-6xl items-center px-6 py-5">
+          {/* Real <a>, not next/link: a hard reload is the reset mechanism for now
+              (this page holds all its state client-side; a same-route Link wouldn't remount it). */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/" className="focus-visible:ring-ring rounded-md outline-none focus-visible:ring-2">
+            <Wordmark size="sm" />
+          </a>
         </div>
       </header>
 
-      <main className="mx-auto w-full flex-1 px-6 py-10 sm:py-14">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8">
+      <main className="mx-auto w-full flex-1 py-10 sm:py-14">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-8 px-6">
           {!panelOpen && (
-            <div className="grid items-center gap-6 sm:grid-cols-[1fr_auto] sm:text-left">
+            <motion.div
+              className="grid items-center gap-6 sm:grid-cols-[1fr_auto] sm:text-left"
+              initial={reduceMotion ? "visible" : "hidden"}
+              animate="visible"
+              variants={STAGGER_CONTAINER}
+            >
               <div className="space-y-3 text-center sm:text-left">
-                <p className="text-forest font-display text-sm font-semibold tracking-wide uppercase">
+                <motion.p variants={FADE_UP} className="text-forest font-display text-sm font-semibold">
                   Poke at reality.
-                </p>
-                <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
+                </motion.p>
+                <motion.h1
+                  variants={FADE_UP}
+                  className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl"
+                >
                   Poke your users. Learn what&rsquo;s real.
-                </h1>
+                </motion.h1>
               </div>
-              <BrandCluster className="hidden w-32 shrink-0 sm:block" />
-            </div>
+              <motion.div variants={POP_IN}>
+                <BrandCluster className="hidden w-32 shrink-0 sm:block" />
+              </motion.div>
+            </motion.div>
           )}
 
           <div
@@ -198,28 +214,48 @@ export default function Home() {
             tabIndex={-1}
             className="focus-visible:ring-ring flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-offset-4"
           >
-            {panelOpen ? (
-              <OutputPanel
-                status={status}
-                errorMessage={errorMessage}
-                grade={gradeResult}
-                onboarding={onboarding}
-                messages={messages}
-                chatSending={chatSending}
-                onReset={handleReset}
-                onRetryGrade={handleRetryGrade}
-                onSendMessage={handleSendMessage}
-              />
-            ) : (
-              <MegaInput
-                text={text}
-                onTextChange={setText}
-                file={file}
-                onFileChange={setFile}
-                onSubmit={handleSubmit}
-                submitting={false}
-              />
-            )}
+            <AnimatePresence mode="wait" initial={false}>
+              {panelOpen ? (
+                <motion.div
+                  key="panel"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: DURATION_BASE, ease: EASE_OUT }}
+                  className="flex flex-1 flex-col"
+                >
+                  <OutputPanel
+                    status={status}
+                    errorMessage={errorMessage}
+                    grade={gradeResult}
+                    onboarding={onboarding}
+                    messages={messages}
+                    chatSending={chatSending}
+                    onReset={handleReset}
+                    onRetryGrade={handleRetryGrade}
+                    onSendMessage={handleSendMessage}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="input"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: DURATION_BASE, ease: EASE_OUT }}
+                  className="flex flex-1 flex-col"
+                >
+                  <MegaInput
+                    text={text}
+                    onTextChange={setText}
+                    file={file}
+                    onFileChange={setFile}
+                    onSubmit={handleSubmit}
+                    submitting={false}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Fredoka } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { MotionProvider } from "@/components/motion-provider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -18,7 +19,7 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "POKE — Poke at reality.",
+  title: "POKE: Poke at reality.",
   description:
     "POKE turns your rough idea, script, or test plan into a sharper usability test. Ask better questions. Get better answers.",
 };
@@ -30,8 +31,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        {children}
-        <Toaster />
+        <MotionProvider>
+          {children}
+          <Toaster />
+        </MotionProvider>
       </body>
     </html>
   );

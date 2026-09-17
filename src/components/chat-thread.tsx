@@ -2,7 +2,9 @@
 
 import { useState, type KeyboardEvent } from "react";
 import { Loader2 } from "lucide-react";
+import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { DURATION_FAST } from "@/lib/motion";
 import type { ChatMessage } from "@/lib/chat";
 
 function PokeAvatar() {
@@ -43,18 +45,30 @@ export function ChatThread({
       <div role="log" aria-live="polite" className="flex-1 space-y-4 overflow-y-auto">
         {messages.map((m, i) =>
           m.role === "assistant" ? (
-            <div key={i} className="flex items-start gap-2.5">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: DURATION_FAST }}
+              className="flex items-start gap-2.5"
+            >
               <PokeAvatar />
               <p className="border-ink bg-bone text-foreground max-w-[85%] rounded-2xl rounded-tl-sm border-[3px] px-4 py-3 text-base leading-relaxed font-medium">
                 {m.content}
               </p>
-            </div>
+            </motion.div>
           ) : (
-            <div key={i} className="flex justify-end">
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: DURATION_FAST }}
+              className="flex justify-end"
+            >
               <p className="border-ink bg-forest text-bone max-w-[85%] rounded-2xl rounded-tr-sm border-[3px] px-4 py-3 text-base leading-relaxed font-medium">
                 {m.content}
               </p>
-            </div>
+            </motion.div>
           )
         )}
         {isSending && (
@@ -81,7 +95,7 @@ export function ChatThread({
         <Button
           onClick={submit}
           disabled={!draft.trim() || isSending}
-          className="border-ink hover:rotate-0 rotate-[1.5deg] rounded-2xl border-[3px] px-6 font-bold shadow-[4px_4px_0_var(--ink)] transition-transform disabled:rotate-0 disabled:shadow-none"
+          className="border-ink hover:rotate-0 rotate-[1.5deg] rounded-2xl border-[3px] px-6 font-bold shadow-[4px_4px_0_var(--ink)] transition-transform duration-200 ease-[var(--ease-brand)] disabled:rotate-0 disabled:shadow-none"
         >
           Send
         </Button>

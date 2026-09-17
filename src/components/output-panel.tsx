@@ -1,9 +1,12 @@
 "use client";
 
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { GradeReport } from "@/components/grade-report";
 import { ChatThread } from "@/components/chat-thread";
+import { PokeLoader } from "@/components/poke-loader";
+import { DURATION_BASE, EASE_OUT } from "@/lib/motion";
 import type { GradeResult } from "@/lib/grading";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -39,13 +42,21 @@ export function OutputPanel({
     return (
       <div
         role="status"
-        className="border-ink bg-card animate-in fade-in slide-in-from-bottom-2 flex min-h-[22rem] flex-1 rotate-[-0.4deg] flex-col overflow-hidden rounded-3xl border-4 shadow-[8px_8px_0_var(--ink)] duration-300"
+        className="border-ink bg-card motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 flex min-h-[22rem] flex-1 rotate-[-0.4deg] flex-col overflow-hidden rounded-3xl border-4 shadow-[8px_8px_0_var(--ink)] duration-300"
       >
-        {grade && !onboarding && (
-          <div className="border-ink animate-in fade-in slide-in-from-top-2 border-b-4 duration-300">
-            <GradeReport result={grade} />
-          </div>
-        )}
+        <AnimatePresence>
+          {grade && !onboarding && (
+            <motion.div
+              key="grade-header"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              transition={{ duration: DURATION_BASE, ease: EASE_OUT }}
+              className="border-ink overflow-hidden border-b-4"
+            >
+              <GradeReport result={grade} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="flex min-h-0 flex-1 flex-col gap-4 p-6 sm:p-8 sm:pt-6">
           <div className="min-h-0 flex-1">
@@ -66,13 +77,13 @@ export function OutputPanel({
   return (
     <div
       role="status"
-      className="border-border bg-card animate-in fade-in slide-in-from-bottom-2 flex min-h-[22rem] flex-1 flex-col items-center justify-center rounded-3xl border-2 p-8 text-center duration-300"
+      className="border-border bg-card motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 flex min-h-[22rem] flex-1 flex-col items-center justify-center rounded-3xl border-2 p-8 text-center duration-300"
     >
       {(status === "submitting" || status === "grading") && (
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="text-forest h-8 w-8 animate-spin" aria-hidden="true" />
+          <PokeLoader />
           <p className="text-lg font-medium">
-            {status === "grading" ? "Grading it…" : "Poking around…"}
+            {status === "grading" ? "Poking holes…" : "Poking around…"}
           </p>
         </div>
       )}
@@ -96,9 +107,9 @@ export function OutputPanel({
         <div className="flex flex-col items-center gap-3">
           <AlertTriangle className="text-destructive h-10 w-10" aria-hidden="true" />
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Saved — but the grade didn&rsquo;t come through.</h2>
+            <h2 className="text-lg font-semibold">Saved, but the grade didn&rsquo;t come through.</h2>
             <p className="text-muted-foreground max-w-xs text-sm">
-              {errorMessage ?? "Your team still got it."} Want to try grading again?
+              {errorMessage ?? "It's saved either way."} Want to try grading again?
             </p>
           </div>
           <Button type="button" variant="outline" onClick={onRetryGrade}>

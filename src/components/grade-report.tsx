@@ -1,3 +1,7 @@
+"use client";
+
+import { motion, useReducedMotion } from "motion/react";
+import { STAGGER_CONTAINER, POP_IN, FADE_UP, SLIDE_LEFT } from "@/lib/motion";
 import type { GradeResult } from "@/lib/grading";
 
 const TIER_CLASSES: Record<GradeResult["grade"], string> = {
@@ -32,9 +36,9 @@ function GradeSection({
   tone: keyof typeof SECTION_BAR_CLASSES;
 }) {
   return (
-    <div>
+    <motion.div variants={SLIDE_LEFT}>
       <h3
-        className={`font-display px-6 py-2.5 text-sm font-bold tracking-wide uppercase sm:px-8 ${SECTION_BAR_CLASSES[tone]}`}
+        className={`font-display px-6 py-2.5 text-sm font-bold sm:px-8 ${SECTION_BAR_CLASSES[tone]}`}
       >
         {title}
       </h3>
@@ -46,22 +50,30 @@ function GradeSection({
           </li>
         ))}
       </ul>
-    </div>
+    </motion.div>
   );
 }
 
 export function GradeReport({ result }: { result: GradeResult }) {
+  const reduce = useReducedMotion();
+
   return (
-    <div className="divide-ink divide-y-4 text-left">
+    <motion.div
+      className="divide-ink divide-y-4 text-left"
+      initial={reduce ? "visible" : "hidden"}
+      animate="visible"
+      variants={STAGGER_CONTAINER}
+    >
       <div className="flex items-center gap-5 px-6 py-6 sm:px-8">
-        <span
+        <motion.span
+          variants={POP_IN}
           className={`font-display border-ink flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[3px] text-3xl font-bold shadow-[5px_5px_0_var(--ink)] sm:h-24 sm:w-24 sm:text-4xl ${TIER_CLASSES[result.grade]}`}
         >
           {result.grade}
-        </span>
-        <p className="font-display text-xl leading-snug font-semibold sm:text-2xl">
+        </motion.span>
+        <motion.p variants={FADE_UP} className="font-display text-xl leading-snug font-semibold sm:text-2xl">
           {result.summary}
-        </p>
+        </motion.p>
       </div>
 
       {result.strengths.length > 0 && (
@@ -77,6 +89,6 @@ export function GradeReport({ result }: { result: GradeResult }) {
           tone="critical"
         />
       )}
-    </div>
+    </motion.div>
   );
 }
