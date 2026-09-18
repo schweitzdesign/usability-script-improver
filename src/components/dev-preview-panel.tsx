@@ -19,10 +19,12 @@ const ONBOARDING_OPTIONS: { key: PreviewKind; label: string }[] = [
 ];
 
 /**
- * Dev-only preview panel: jumps the app straight to a canned grade/chat
- * state without calling the real /api/grade or /api/chat routes. Never
- * rendered in production — this is a QA tool, not a product surface, so it
- * deliberately does NOT use the brand's sticker/tactile visual language.
+ * Preview panel: jumps the app straight to a canned grade/chat state
+ * without calling the real /api/grade or /api/chat routes. Whether this
+ * renders at all (dev-only on the real page vs. always-on on /demo) is
+ * the caller's decision, not this component's — this is a QA tool, not a
+ * product surface, so it deliberately does NOT use the brand's
+ * sticker/tactile visual language.
  */
 export function DevPreviewPanel({
   onApply,
@@ -32,8 +34,6 @@ export function DevPreviewPanel({
   onClear: () => void;
 }) {
   const [open, setOpen] = useState(false);
-
-  if (process.env.NODE_ENV === "production") return null;
 
   function pick(kind: PreviewKind) {
     onApply(kind);
