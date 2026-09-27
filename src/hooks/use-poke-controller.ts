@@ -5,6 +5,9 @@ import { isLowInfo, type GradeResult } from "@/lib/grading";
 import type { ChatMessage } from "@/lib/chat";
 import type { PanelStatus } from "@/components/output-panel";
 import type { PreviewKind } from "@/components/dev-preview-panel";
+import type { DraftTasksResult } from "@/lib/tools/draft-tasks";
+import type { RefinementResult } from "@/lib/tools/refine-task";
+import type { AskChoiceResult } from "@/lib/tools/ask-choice";
 import {
   PREVIEW_SCRIPT_TEXT,
   GRADE_FIXTURES,
@@ -146,10 +149,24 @@ export function usePokeController(mode: PokeMode) {
         reply?: string;
         graded?: boolean;
         result?: GradeResult;
+        draftedTasks?: DraftTasksResult | null;
+        refinements?: { taskText: string; result: RefinementResult }[];
+        askChoice?: AskChoiceResult | null;
       };
 
-      if (res.ok && data.reply) {
-        setMessages((m) => [...m, { role: "assistant", content: data.reply as string }]);
+      // A turn can legitimately have no prose reply when it only asks an
+      // ask_choice question — the card itself is the content that turn.
+      if (res.ok && (data.reply || data.askChoice)) {
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: data.reply ?? "",
+            draftedTasks: data.draftedTasks ?? undefined,
+            refinements: data.refinements?.length ? data.refinements : undefined,
+            askChoice: data.askChoice ?? undefined,
+          },
+        ]);
         // Onboarding chat can surface enough detail to auto-grade mid-conversation.
         if (data.graded && data.result) {
           setGradeResult(data.result);

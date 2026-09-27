@@ -4,6 +4,9 @@ import { useState, type KeyboardEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { TaskDraftCard } from "@/components/task-draft-card";
+import { RefinementCard } from "@/components/refinement-card";
+import { QuickChoiceCard } from "@/components/quick-choice-card";
 import { DURATION_FAST } from "@/lib/motion";
 import type { ChatMessage } from "@/lib/chat";
 
@@ -50,12 +53,35 @@ export function ChatThread({
               initial={{ opacity: 0, y: 10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: DURATION_FAST }}
-              className="flex items-start gap-2.5"
+              className="flex flex-col gap-2"
             >
-              <PokeAvatar />
-              <p className="border-ink bg-bone text-foreground max-w-[85%] rounded-2xl rounded-tl-sm border-[3px] px-4 py-3 text-base leading-relaxed font-medium">
-                {m.content}
-              </p>
+              {m.content.trim() && (
+                <div className="flex items-start gap-2.5">
+                  <PokeAvatar />
+                  <p className="border-ink bg-bone text-foreground max-w-[85%] rounded-2xl rounded-tl-sm border-2 px-3.5 py-2.5 text-base leading-relaxed font-medium">
+                    {m.content}
+                  </p>
+                </div>
+              )}
+              {m.draftedTasks && (
+                <div className="pl-[42px]">
+                  <TaskDraftCard draft={m.draftedTasks} />
+                </div>
+              )}
+              {m.refinements?.map((r, ri) => (
+                <div key={ri} className="pl-[42px]">
+                  <RefinementCard taskText={r.taskText} result={r.result} />
+                </div>
+              ))}
+              {m.askChoice && (
+                <div className="pl-[42px]">
+                  <QuickChoiceCard
+                    choice={m.askChoice}
+                    onPick={(option) => onSend(option)}
+                    disabled={isSending || i !== messages.length - 1}
+                  />
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div
@@ -65,7 +91,7 @@ export function ChatThread({
               transition={{ duration: DURATION_FAST }}
               className="flex justify-end"
             >
-              <p className="border-ink bg-forest text-bone max-w-[85%] rounded-2xl rounded-tr-sm border-[3px] px-4 py-3 text-base leading-relaxed font-medium">
+              <p className="border-ink bg-forest text-bone max-w-[85%] rounded-2xl rounded-tr-sm border-2 px-3.5 py-2.5 text-base leading-relaxed font-medium">
                 {m.content}
               </p>
             </motion.div>

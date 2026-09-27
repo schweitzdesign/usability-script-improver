@@ -11,7 +11,7 @@ export const GRADE_VALUES = [
 // wire level even though the system prompt asks for brevity. Truncate
 // rather than reject on overage — a slightly-too-long grade shouldn't
 // throw away an otherwise-valid response and cost a retry.
-const boundedString = (maxLen: number) =>
+export const boundedString = (maxLen: number) =>
   z
     .string()
     .min(1)
