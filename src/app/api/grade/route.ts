@@ -52,7 +52,7 @@ export async function POST(request: Request) {
     );
   }
 
-  // Best-effort persistence — mirrors the Slack-failure-doesn't-fail-the-request pattern.
+  // Best-effort persistence: a failed save shouldn't throw away a grade that already succeeded.
   const supabase = getSupabaseServerClient();
   if (supabase && submissionId) {
     const { error } = await supabase

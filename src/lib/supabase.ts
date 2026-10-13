@@ -21,8 +21,47 @@ export type SubmissionRow = {
   slack_notified: boolean;
 } & GradingColumns;
 
-type SubmissionInsert = Omit<SubmissionRow, "id" | "created_at" | keyof GradingColumns> &
-  Partial<GradingColumns>;
+// slack_notified is a legacy column: Slack was retired, the column stays in
+// the database (defaulting to false) but nothing writes it anymore.
+type SubmissionInsert = Omit<
+  SubmissionRow,
+  "id" | "created_at" | "slack_notified" | keyof GradingColumns
+> &
+  Partial<GradingColumns> & { slack_notified?: boolean };
+
+export type FeedbackKind = "bug" | "idea" | "other";
+
+export type FeedbackRow = {
+  id: string;
+  ticket_number: number;
+  created_at: string;
+  kind: FeedbackKind;
+  message: string;
+  email: string | null;
+  page_url: string | null;
+  user_agent: string | null;
+  viewport: string | null;
+  app_mode: "live" | "demo";
+  status: string;
+  ack_sent_at: string | null;
+};
+
+type FeedbackInsert = Omit<FeedbackRow, "id" | "ticket_number" | "created_at" | "status" | "ack_sent_at"> &
+  Partial<Pick<FeedbackRow, "status" | "ack_sent_at">>;
+
+export type UsageEventRow = {
+  id: string;
+  created_at: string;
+  source: string;
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  est_cost_usd: number;
+  feedback_id: string | null;
+};
+
+type UsageEventInsert = Omit<UsageEventRow, "id" | "created_at" | "feedback_id"> &
+  Partial<Pick<UsageEventRow, "feedback_id">>;
 
 type Database = {
   public: {
@@ -31,6 +70,18 @@ type Database = {
         Row: SubmissionRow;
         Insert: SubmissionInsert;
         Update: Partial<Omit<SubmissionRow, "id" | "created_at">>;
+        Relationships: [];
+      };
+      feedback: {
+        Row: FeedbackRow;
+        Insert: FeedbackInsert;
+        Update: Partial<Omit<FeedbackRow, "id" | "ticket_number" | "created_at">>;
+        Relationships: [];
+      };
+      usage_events: {
+        Row: UsageEventRow;
+        Insert: UsageEventInsert;
+        Update: Partial<Omit<UsageEventRow, "id" | "created_at">>;
         Relationships: [];
       };
     };

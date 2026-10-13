@@ -2,6 +2,7 @@ import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient, GRADING_MODEL } from "@/lib/anthropic";
 import { boundedString } from "@/lib/grading";
+import { recordUsage } from "@/lib/usage";
 
 /**
  * Agentic tool: offered via `tools`, never forced. Claude calls this on a
@@ -224,6 +225,7 @@ export async function refineTaskWording(taskText: string): Promise<RefinementRes
         tool_choice: { type: "tool", name: "submit_semantic_findings" },
         messages: [{ role: "user", content: taskText }],
       });
+      recordUsage("refine", GRADING_MODEL, response.usage);
       const toolUse = response.content.find(
         (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
       );

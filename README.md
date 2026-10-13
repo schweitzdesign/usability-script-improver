@@ -11,31 +11,37 @@ Built with Next.js (App Router), TypeScript, Tailwind CSS, and shadcn/ui.
 ## Status: Phase 2
 
 One big paste-or-drop input (no accounts, no name/email required) → saved to Supabase
-→ Slack notification → graded by Claude (F to A+, on-brand voice, up to 3 each of
+→ graded by Claude (F to A+, on-brand voice, up to 3 each of
 strengths/weaknesses/critical pre-launch changes) → an ongoing chat seeded with the
 grade, so the designer can go deeper. Below the input is a marketing pass introducing
-the product and the brand.
+the product and the brand. A "Feedback" button in the header sends bug reports and
+ideas into a `feedback` table, with a confirmation email when the sender leaves an
+address.
+
+Where this is headed: a small team of role-based agents (support, product manager,
+design-engineer) that manage POKE from alpha to beta, with Telegram as the comms
+gateway. The plan lives in [`docs/agents/`](docs/agents/).
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.local.example .env.local   # add your Slack webhook URL
+cp .env.local.example .env.local   # add your Supabase, Anthropic, and Resend keys
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-### Slack notifications
+### Feedback emails (Resend)
 
-Submissions are posted to Slack via an [Incoming Webhook](https://api.slack.com/messaging/webhooks):
+The feedback form emails a confirmation (ticket number plus our response window) to
+senders who leave an address, via [Resend](https://resend.com):
 
-1. Create a Slack app (or reuse one) at <https://api.slack.com/apps>.
-2. Enable **Incoming Webhooks** and add one for the channel you want submissions in.
-3. Copy the webhook URL into `.env.local` as `SLACK_WEBHOOK_URL`.
+1. Create a Resend account and an API key; put it in `.env.local` as `RESEND_API_KEY`.
+2. Set `FEEDBACK_FROM_EMAIL` to a verified sender. Until you verify a domain, Resend's
+   test sender (`onboarding@resend.dev`) can only email your own account address.
 
-If the webhook isn't configured, submissions still succeed locally but a warning is
-logged to the server console instead of posting to Slack.
+If either is missing, feedback still saves and a warning is logged instead of sending.
 
 ### Database (Supabase)
 
@@ -55,6 +61,11 @@ Grading persists back onto the same row (`grade`, `grade_summary`,
 [`supabase/migrations/0002_add_grading_columns.sql`](supabase/migrations/0002_add_grading_columns.sql) —
 run this too, after `schema.sql`.
 
+The feedback inbox and the API spend ledger (`feedback`, `usage_events`) come from
+[`supabase/migrations/0003_feedback_and_usage.sql`](supabase/migrations/0003_feedback_and_usage.sql) —
+run it after 0002. Without it, feedback submissions fail with a friendly error and the
+usage ledger quietly logs a warning.
+
 ### AI grading & chat (Anthropic)
 
 1. Get an API key at <https://console.anthropic.com>.
@@ -67,7 +78,9 @@ keyboard mash) are detected with a **zero-token heuristic** (`src/lib/grading.ts
 `isLowInfo`) and handled entirely in application logic — no model call, and the
 response doubles as the onboarding prompt asking for a learning objective. If
 `ANTHROPIC_API_KEY` isn't configured, grading/chat soft-skip with a console warning,
-same as Slack/Supabase.
+same as Supabase and Resend. Every Anthropic call also writes a row to the
+`usage_events` table (tokens plus an estimated dollar cost from `src/lib/pricing.ts`)
+so spend is visible.
 
 ## Brand
 
@@ -127,7 +140,7 @@ more than coverage.
 
 ## Roadmap
 
-- **Phase 1**: paste-or-drop intake → saved to Supabase → Slack notification.
+- **Phase 1**: paste-or-drop intake → saved to Supabase.
 - **Phase 2 (this)**: AI grading (F–A+, strengths/weaknesses/critical changes) →
   ongoing chat, with a zero-token onboarding path for low-detail submissions.
 - **Phase 3**: accounts and a history of submissions/feedback per user; possibly
@@ -135,6 +148,6 @@ more than coverage.
 
 ## Deploy
 
-Deploys cleanly to [Vercel](https://vercel.com/new). Set `SLACK_WEBHOOK_URL`,
-`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `ANTHROPIC_API_KEY` as environment
-variables in the project settings.
+Deploys cleanly to [Vercel](https://vercel.com/new). Set `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, and
+`FEEDBACK_FROM_EMAIL` as environment variables in the project settings.

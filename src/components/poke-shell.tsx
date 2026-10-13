@@ -7,6 +7,7 @@ import { OutputPanel } from "@/components/output-panel";
 import { BrandCluster } from "@/components/brand-cluster";
 import { MarketingSections } from "@/components/marketing-sections";
 import { DevPreviewPanel } from "@/components/dev-preview-panel";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 import { DURATION_BASE, EASE_OUT, STAGGER_CONTAINER, FADE_UP, POP_IN } from "@/lib/motion";
 import type { PokeController } from "@/hooks/use-poke-controller";
 
@@ -61,11 +62,14 @@ export function PokeShell({
           <a href={demoBadge ? "/demo" : "/"} className="focus-visible:ring-ring rounded-md outline-none focus-visible:ring-2">
             <Wordmark size="sm" />
           </a>
-          {demoBadge && (
-            <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500">
-              Demo — canned data, no API calls
-            </span>
-          )}
+          <div className="flex items-center gap-3">
+            {demoBadge && (
+              <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500">
+                Demo — canned data, no API calls
+              </span>
+            )}
+            <FeedbackDialog demo={demoBadge} />
+          </div>
         </div>
       </header>
 

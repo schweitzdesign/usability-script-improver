@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { getAnthropicClient, GRADING_MODEL } from "@/lib/anthropic";
+import { recordUsage } from "@/lib/usage";
 
 export const GRADE_VALUES = [
   "F", "D-", "D", "D+", "C-", "C", "C+", "B-", "B", "B+", "A-", "A", "A+",
@@ -140,6 +141,7 @@ export async function runGrading(scriptText: string): Promise<GradeResult> {
     tool_choice: { type: "tool", name: "submit_grade" },
     messages: [{ role: "user", content: truncateScript(scriptText) }],
   });
+  recordUsage("grade", GRADING_MODEL, response.usage);
 
   const toolUse = response.content.find(
     (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"

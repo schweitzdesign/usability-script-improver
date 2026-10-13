@@ -3,6 +3,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { ChatRequestSchema, buildChatSystemPrompt, CHAT_MAX_TOKENS, CHAT_TOOL_MAX_TOKENS } from "@/lib/chat";
 import { GradingFailedError, GradingUnavailableError, runGrading, truncateScript } from "@/lib/grading";
 import { getAnthropicClient, GRADING_MODEL } from "@/lib/anthropic";
+import { recordUsage } from "@/lib/usage";
 import { DRAFT_TASKS_TOOL, DraftTasksResultSchema, type DraftTasksResult } from "@/lib/tools/draft-tasks";
 import { REFINE_TASK_TOOL, refineTaskWording, type RefinementResult } from "@/lib/tools/refine-task";
 import { ASK_CHOICE_TOOL, AskChoiceResultSchema, type AskChoiceResult } from "@/lib/tools/ask-choice";
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
         tool_choice: { type: "auto" },
         messages: conversation,
       });
+      recordUsage("chat", GRADING_MODEL, response.usage);
 
       const toolUses = response.content.filter(
         (b): b is Anthropic.ToolUseBlock => b.type === "tool_use"
@@ -157,6 +159,7 @@ export async function POST(request: Request) {
         system,
         messages: conversation,
       });
+      recordUsage("chat", GRADING_MODEL, finalResponse.usage);
       const textBlock = finalResponse.content.find(
         (b): b is Anthropic.TextBlock => b.type === "text"
       );

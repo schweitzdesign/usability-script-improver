@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import mammoth from "mammoth";
-import { notifySlack } from "@/lib/slack";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -89,17 +88,7 @@ export async function POST(request: Request) {
   }
 
   const supabase = getSupabaseServerClient();
-  let slackNotified = false;
   let id: string | null = null;
-
-  try {
-    await notifySlack({ title, name, email, mode, fileName, scriptText });
-    slackNotified = true;
-  } catch (error) {
-    // Best-effort: persistence below is the source of truth, so a failed
-    // notification shouldn't fail the submission.
-    console.error("[submissions] Slack notification failed:", error);
-  }
 
   if (supabase) {
     const { data, error } = await supabase
@@ -111,7 +100,6 @@ export async function POST(request: Request) {
         mode,
         file_name: fileName ?? null,
         script_text: scriptText,
-        slack_notified: slackNotified,
       })
       .select("id")
       .single();
