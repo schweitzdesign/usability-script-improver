@@ -25,6 +25,16 @@ export async function POST(request: Request, { params }: Params) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid reply." }, { status: 400 });
   const { body, actor } = parsed.data;
 
+  // House rule, enforced here because the model doesn't reliably follow it from
+  // instructions alone: no em or en dashes in anything a customer reads. The
+  // error text goes back to the bot, which rewrites and retries.
+  if (/[–—]/.test(body)) {
+    return NextResponse.json(
+      { error: "Replies can't contain em dashes or en dashes. Rewrite using commas, periods, or colons, then try again." },
+      { status: 400 }
+    );
+  }
+
   const supabase = getSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
 
