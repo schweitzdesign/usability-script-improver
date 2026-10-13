@@ -107,6 +107,14 @@ export async function PATCH(request: Request, { params }: Params) {
     if (duplicate_of === row.ticket_number) {
       return NextResponse.json({ error: "A ticket can't duplicate itself." }, { status: 400 });
     }
+    // The earliest report is the canonical one. Without this, two tickets about
+    // the same problem can each be marked a duplicate of the other.
+    if (duplicate_of > row.ticket_number) {
+      return NextResponse.json(
+        { error: "A ticket can only be a duplicate of an earlier ticket (a lower number). Link the later one to this one instead." },
+        { status: 400 }
+      );
+    }
     const { data: dup } = await supabase
       .from("feedback")
       .select("id")

@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 const querySchema = z.object({
   status: z.enum(TICKET_STATUSES).optional(),
   limit: z.coerce.number().int().min(1).max(50).optional().default(20),
+  order: z.enum(["asc", "desc"]).optional().default("asc"),
 });
 
 export async function GET(request: Request) {
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
   const parsed = querySchema.safeParse({
     status: url.searchParams.get("status") ?? undefined,
     limit: url.searchParams.get("limit") ?? undefined,
+    order: url.searchParams.get("order") ?? undefined,
   });
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid query." }, { status: 400 });
@@ -30,7 +32,7 @@ export async function GET(request: Request) {
   let query = supabase
     .from("feedback")
     .select(AGENT_TICKET_COLUMNS)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: parsed.data.order === "asc" })
     .limit(parsed.data.limit);
   if (parsed.data.status) query = query.eq("status", parsed.data.status);
 
