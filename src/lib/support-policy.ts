@@ -40,6 +40,10 @@ export const SUPPORT_FAQ = [
     a: "Yes. After a grade you can chat with POKE about the script to go deeper on what to fix.",
   },
   {
+    q: "Can I save my graded script and come back to it later?",
+    a: "Not yet. There are no accounts or saved history, so a grade only lives on the page while it is open. Copy what you need before you leave.",
+  },
+  {
     q: "Is my script saved?",
     a: "Yes. Submissions are stored so POKE can be improved. Do not paste anything confidential.",
   },
