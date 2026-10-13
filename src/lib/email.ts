@@ -29,6 +29,38 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
+type SupportReplyInput = {
+  to: string;
+  ticketNumber: number;
+  body: string;
+};
+
+/** Sends a Support bot reply. Throws on failure so the caller never marks it sent. */
+export async function sendSupportReply(input: SupportReplyInput) {
+  const resend = getResend();
+  const from = process.env.FEEDBACK_FROM_EMAIL;
+  if (!resend || !from) {
+    throw new Error("Email isn't configured (RESEND_API_KEY / FEEDBACK_FROM_EMAIL).");
+  }
+
+  const ticket = formatTicketNumber(input.ticketNumber);
+  const text = `${input.body}\n\nTicket: ${ticket}. Reply to this email if you have more to add.`;
+  const paragraphs = input.body
+    .split(/\n{2,}/)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  const html = `<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:520px">${paragraphs}<p style="color:#555">Ticket: ${ticket}. Reply to this email if you have more to add.</p></div>`;
+
+  const { error } = await resend.emails.send({
+    from,
+    to: input.to,
+    subject: `Re: ${ticket}`,
+    text,
+    html,
+  });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
 /** Sends the "we got it" confirmation. Unconfigured is not fatal, like every other side channel here. */
 export async function sendFeedbackAck(input: FeedbackAckInput) {
   const resend = getResend();

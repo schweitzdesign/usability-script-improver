@@ -3,6 +3,8 @@
 // PM bot's cost math both read from this file.
 const PRICE_PER_MTOK: Record<string, { input: number; output: number }> = {
   "claude-haiku-4-5": { input: 1.0, output: 5.0 },
+  // Used by the PM and Design-Engineer bots from Phase 3 (price per Hermes' model catalog).
+  "claude-sonnet-5": { input: 2.0, output: 10.0 },
 };
 
 export function estimateCostUsd(model: string, inputTokens: number, outputTokens: number) {

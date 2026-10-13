@@ -1,0 +1,154 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { requireAgent } from "@/lib/agent-auth";
+import { getSupabaseServerClient } from "@/lib/supabase";
+import {
+  AGENT_TICKET_COLUMNS,
+  CLASSIFICATIONS,
+  SEVERITIES,
+  TICKET_STATUSES,
+  canTransition,
+  logTicketEvent,
+  parseTicketNumber,
+  toAgentTicket,
+} from "@/lib/tickets";
+
+export const runtime = "nodejs";
+
+type Params = { params: Promise<{ ticket: string }> };
+
+const patchSchema = z.object({
+  status: z.enum(TICKET_STATUSES).optional(),
+  classification: z.enum(CLASSIFICATIONS).optional(),
+  severity: z.enum(SEVERITIES).optional(),
+  triage_notes: z.string().trim().min(1).max(2000).optional(),
+  duplicate_of: z.coerce.number().int().positive().optional(),
+  actor: z.string().trim().min(1).max(40).optional().default("support-bot"),
+});
+
+export async function GET(request: Request, { params }: Params) {
+  const denied = requireAgent(request);
+  if (denied) return denied;
+
+  const number = parseTicketNumber((await params).ticket);
+  if (number === null) return NextResponse.json({ error: "Bad ticket number." }, { status: 400 });
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
+
+  const { data: row, error } = await supabase
+    .from("feedback")
+    .select(AGENT_TICKET_COLUMNS)
+    .eq("ticket_number", number)
+    .maybeSingle();
+  if (error) {
+    console.error("[agent] get ticket failed:", error);
+    return NextResponse.json({ error: "Couldn't load that ticket." }, { status: 502 });
+  }
+  if (!row) return NextResponse.json({ error: "No such ticket." }, { status: 404 });
+
+  const { data: events } = await supabase
+    .from("ticket_events")
+    .select("created_at, actor, action, detail")
+    .eq("feedback_id", row.id)
+    .order("created_at", { ascending: true })
+    .limit(30);
+
+  return NextResponse.json({ ok: true, ticket: toAgentTicket(row), events: events ?? [] });
+}
+
+export async function PATCH(request: Request, { params }: Params) {
+  const denied = requireAgent(request);
+  if (denied) return denied;
+
+  const number = parseTicketNumber((await params).ticket);
+  if (number === null) return NextResponse.json({ error: "Bad ticket number." }, { status: 400 });
+
+  const parsed = patchSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) return NextResponse.json({ error: "Invalid update." }, { status: 400 });
+  const { status, classification, severity, triage_notes, duplicate_of, actor } = parsed.data;
+
+  const supabase = getSupabaseServerClient();
+  if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
+
+  const { data: row, error: loadError } = await supabase
+    .from("feedback")
+    .select("id, ticket_number, status, classification, severity")
+    .eq("ticket_number", number)
+    .maybeSingle();
+  if (loadError) {
+    console.error("[agent] load ticket failed:", loadError);
+    return NextResponse.json({ error: "Couldn't load that ticket." }, { status: 502 });
+  }
+  if (!row) return NextResponse.json({ error: "No such ticket." }, { status: 404 });
+
+  if (status && !canTransition(row.status, status)) {
+    return NextResponse.json(
+      { error: `A ${row.status} ticket can't move to ${status}.` },
+      { status: 409 }
+    );
+  }
+
+  // Triage is only complete with a classification (and severity for real issues).
+  const finalClassification = classification ?? row.classification;
+  const finalSeverity = severity ?? row.severity;
+  if (status === "triaged" && (!finalClassification || !finalSeverity)) {
+    return NextResponse.json(
+      { error: "Triaging needs both a classification and a severity." },
+      { status: 400 }
+    );
+  }
+  if (status === "resolved_by_support" && !finalClassification) {
+    return NextResponse.json({ error: "Resolving needs a classification." }, { status: 400 });
+  }
+
+  let duplicateId: string | undefined;
+  if (duplicate_of !== undefined) {
+    if (duplicate_of === row.ticket_number) {
+      return NextResponse.json({ error: "A ticket can't duplicate itself." }, { status: 400 });
+    }
+    const { data: dup } = await supabase
+      .from("feedback")
+      .select("id")
+      .eq("ticket_number", duplicate_of)
+      .maybeSingle();
+    if (!dup) return NextResponse.json({ error: "No such duplicate ticket." }, { status: 400 });
+    duplicateId = dup.id;
+  }
+
+  const changes = {
+    ...(status && status !== row.status ? { status } : {}),
+    ...(classification ? { classification } : {}),
+    ...(severity ? { severity } : {}),
+    ...(triage_notes ? { triage_notes } : {}),
+    ...(duplicateId ? { duplicate_of: duplicateId } : {}),
+    ...(status === "queued" && row.status !== "queued" ? { queued_at: new Date().toISOString() } : {}),
+  };
+  if (Object.keys(changes).length === 0) {
+    return NextResponse.json({ ok: true, changed: false });
+  }
+
+  // Conditional on the status we just read, so two agents racing to claim the
+  // same ticket can't both win: the loser updates zero rows and gets a 409.
+  const { data: updated, error: updateError } = await supabase
+    .from("feedback")
+    .update(changes)
+    .eq("id", row.id)
+    .eq("status", row.status)
+    .select("ticket_number");
+  if (updateError) {
+    console.error("[agent] update ticket failed:", updateError);
+    return NextResponse.json({ error: "Couldn't update that ticket." }, { status: 502 });
+  }
+  if (!updated || updated.length === 0) {
+    return NextResponse.json({ error: "That ticket just changed. Reload and retry." }, { status: 409 });
+  }
+
+  await logTicketEvent(supabase, row.id, actor, "update", {
+    from_status: row.status,
+    ...changes,
+    ...(duplicate_of !== undefined ? { duplicate_of_ticket: duplicate_of } : {}),
+  });
+
+  return NextResponse.json({ ok: true, changed: true });
+}

@@ -31,6 +31,18 @@ type SubmissionInsert = Omit<
 
 export type FeedbackKind = "bug" | "idea" | "other";
 
+export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
+
+type TriageColumns = {
+  classification: "bug" | "usability" | "feature_request" | "user_error" | "question" | null;
+  severity: "low" | "medium" | "high" | "critical" | null;
+  triage_notes: string | null;
+  duplicate_of: string | null;
+  reply_draft: string | null;
+  reply_sent_at: string | null;
+  queued_at: string | null;
+};
+
 export type FeedbackRow = {
   id: string;
   ticket_number: number;
@@ -44,10 +56,25 @@ export type FeedbackRow = {
   app_mode: "live" | "demo";
   status: string;
   ack_sent_at: string | null;
+} & TriageColumns;
+
+type FeedbackInsert = Omit<
+  FeedbackRow,
+  "id" | "ticket_number" | "created_at" | "status" | "ack_sent_at" | keyof TriageColumns
+> &
+  Partial<Pick<FeedbackRow, "status" | "ack_sent_at">> &
+  Partial<TriageColumns>;
+
+export type TicketEventRow = {
+  id: string;
+  feedback_id: string;
+  created_at: string;
+  actor: string;
+  action: string;
+  detail: Json | null;
 };
 
-type FeedbackInsert = Omit<FeedbackRow, "id" | "ticket_number" | "created_at" | "status" | "ack_sent_at"> &
-  Partial<Pick<FeedbackRow, "status" | "ack_sent_at">>;
+type TicketEventInsert = Omit<TicketEventRow, "id" | "created_at">;
 
 export type UsageEventRow = {
   id: string;
@@ -76,6 +103,12 @@ type Database = {
         Row: FeedbackRow;
         Insert: FeedbackInsert;
         Update: Partial<Omit<FeedbackRow, "id" | "ticket_number" | "created_at">>;
+        Relationships: [];
+      };
+      ticket_events: {
+        Row: TicketEventRow;
+        Insert: TicketEventInsert;
+        Update: Partial<Omit<TicketEventRow, "id" | "created_at">>;
         Relationships: [];
       };
       usage_events: {
