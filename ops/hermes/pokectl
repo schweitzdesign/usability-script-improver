@@ -122,6 +122,14 @@ def cmd_ticket_get(args):
             print(f"- {e['created_at']} {e['actor']} {e['action']}")
 
 
+def cmd_ticket_recent(args):
+    payload = ok_or_fail(*call("GET", f"/tickets?limit={args.limit}"))
+    tickets = sorted(payload["tickets"], key=lambda t: t["ticket_number"], reverse=True)
+    for t in tickets:
+        label = t.get("classification") or "-"
+        print(f"{ticket_label(t['ticket_number'])} {t['status']} {t['kind']}/{label}: {one_line(t['message'], 90)}")
+
+
 def cmd_ticket_classify(args):
     body = {"actor": args.actor}
     if args.cls:
@@ -276,9 +284,16 @@ def main():
     get.add_argument("number")
     get.set_defaults(fn=cmd_ticket_get)
 
+    recent = ticket.add_parser("recent", help="one line per recent ticket, to spot duplicates")
+    recent.add_argument("--limit", type=int, default=15)
+    recent.set_defaults(fn=cmd_ticket_recent)
+
     classify = ticket.add_parser("classify", help="record triage")
     classify.add_argument("number")
-    classify.add_argument("--class", dest="cls", choices=["bug", "usability", "feature_request", "user_error", "question"])
+    classify.add_argument(
+        "--class", dest="cls",
+        choices=["bug", "usability", "feature_request", "user_error", "question", "not_actionable"],
+    )
     classify.add_argument("--severity", choices=["low", "medium", "high", "critical"])
     classify.add_argument("--notes")
     classify.add_argument("--duplicate-of", type=int)

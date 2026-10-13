@@ -34,7 +34,14 @@ export type FeedbackKind = "bug" | "idea" | "other";
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
 type TriageColumns = {
-  classification: "bug" | "usability" | "feature_request" | "user_error" | "question" | null;
+  classification:
+    | "bug"
+    | "usability"
+    | "feature_request"
+    | "user_error"
+    | "question"
+    | "not_actionable"
+    | null;
   severity: "low" | "medium" | "high" | "critical" | null;
   triage_notes: string | null;
   duplicate_of: string | null;

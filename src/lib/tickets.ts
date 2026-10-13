@@ -4,7 +4,14 @@ import type { getSupabaseServerClient, Json } from "@/lib/supabase";
 type Supabase = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
 
 export const TICKET_STATUSES = ["new", "queued", "triaged", "resolved_by_support"] as const;
-export const CLASSIFICATIONS = ["bug", "usability", "feature_request", "user_error", "question"] as const;
+export const CLASSIFICATIONS = [
+  "bug",
+  "usability",
+  "feature_request",
+  "user_error",
+  "question",
+  "not_actionable",
+] as const;
 export const SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
