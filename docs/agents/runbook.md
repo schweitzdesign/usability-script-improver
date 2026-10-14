@@ -80,8 +80,11 @@ Run once, right before deploying (not on every iteration):
 | The agents' command line | `ops/hermes/pokectl`, installed at `/usr/local/bin/pokectl` on the droplet |
 | Its config and token | `/etc/pokectl.env` on the droplet (mode 600) |
 | Timers | `ops/hermes/systemd/*`, installed in `/etc/systemd/system/` |
-| The bot's instructions | `/root/.hermes/profiles/support/SOUL.md` on the droplet |
-| The bot's settings | `/root/.hermes/profiles/support/config.yaml` (model, tools, approvals) |
+| The bot's instructions | `/root/.hermes/profiles/support/SOUL.md` on the droplet. Reference copy in `ops/hermes/support/SOUL.md` |
+| The bot's settings | `/root/.hermes/profiles/support/config.yaml` (model, tools, approvals). Reference copy of our changes in `ops/hermes/support/config.overrides.yaml` |
+
+The repo copies are for history and review, written from the edits applied on 2026-10-14. If you
+change the live files, update the copies. Next session, diff them against the droplet first.
 | Shared facts and tone | `src/lib/support-policy.ts` (the bot reads it through `pokectl policy`) |
 
 ### Operating it (run these in the DigitalOcean console)

@@ -1,0 +1,76 @@
+# Reference copy of what we changed on the Hermes `support` profile, on top of
+# a blank profile created with:
+#   hermes profile create support --no-skills --no-alias --description "..."
+# The real file lives at /root/.hermes/profiles/support/config.yaml on the droplet.
+# This copy is for history and review; it contains no secrets (the profile's API
+# key lives in its own .env on the droplet and is never committed).
+#
+# Safety model, verified with `hermes -p support approvals test -- <command>`
+# (nothing executes): manual mode means anything not allowlisted is refused when
+# no human answers; only `pokectl *` is allowlisted; deny rules are fnmatch globs
+# that block secret paths, network tools, scripting languages, and shell chaining
+# or substitution. These are policy, not a sandbox. See docs/agents/runbook.md.
+
+model:
+  provider: anthropic
+  default: claude-haiku-4-5
+
+# Toolsets, set with `hermes -p support tools disable ...` / `enable kanban`.
+# Enabled: terminal, kanban. Everything else disabled to keep the prompt small
+# (kanban alone is about 24 KB of tool schemas).
+
+approvals:
+  mode: manual
+  timeout: 20
+  cron_mode: deny
+  single_query_mode: deny
+  unattended_mode: deny
+  deny:
+    - "*.env*"
+    - "*pokectl*env*"
+    - "*.hermes*"
+    - "*/etc/*"
+    - "*/root*"
+    - "*~*"
+    - "*$*"
+    - "*/proc/*"
+    - "*/var/lib*"
+    - "*hermes *"
+    - "*sudo*"
+    - "*chmod*"
+    - "*chown*"
+    - "*printenv*"
+    - "env"
+    - "env *"
+    - "*secret*"
+    - "*credential*"
+    - "*google*"
+    - "*curl*"
+    - "*wget*"
+    - "*ssh*"
+    - "*scp*"
+    - "*ncat*"
+    - "*nc *"
+    - "*socat*"
+    - "*python*"
+    - "*node *"
+    - "*perl*"
+    - "*ruby*"
+    - "*base64*"
+    - "*`*"
+    - "*&&*"
+    - "*||*"
+    - "*|*"
+    - "*;*"
+    - "*>*"
+    - "*<*"
+    - "*\n*"
+
+command_allowlist:
+  - "pokectl *"
+
+# Dispatcher settings live on the default profile (the gateway host), not here:
+#   kanban.max_in_progress: 1
+#   kanban.auto_decompose: false
+#   kanban.failure_limit: 2
+# Per-ticket tasks are created by `pokectl sync` with --max-runtime 10m --max-retries 1.
