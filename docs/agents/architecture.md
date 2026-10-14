@@ -4,7 +4,7 @@ Three diagrams. They render on GitHub. Roles and rules are in [PRD.md](PRD.md).
 
 ## 1. The big picture
 
-Solid arrows exist today (Phase 1). Dashed arrows are planned.
+Solid arrows exist today (Phases 1 and 2). Dashed arrows are planned.
 
 ```mermaid
 flowchart LR
@@ -14,15 +14,24 @@ flowchart LR
     poke -->|every Anthropic call| ledger[(usage_events)]
     ledger --- db
 
-    subgraph hermes[Hermes on DigitalOcean]
-        support[Support bot]
+    subgraph droplet[DigitalOcean droplet]
+        sync[pokectl sync, every 2 min, no tokens]
+        kanban[Hermes kanban and dispatcher]
+        support[Support bot, Haiku, pokectl only]
         pm[PM bot]
         de[Design-Engineer bot]
+        sync --> kanban --> support
+        kanban -.-> pm
+        kanban -.-> de
     end
 
-    db -.->|agent API, bearer token| hermes
-    hermes -.->|usage reports| ledger
-    hermes <-.->|Telegram| zach([Zach, Director of Product])
+    api[/api/agent, bearer token/]
+    poke --- api
+    sync -->|poll new tickets| api
+    support -->|triage, draft reply| api
+    api --> db
+    droplet -->|usage report| api
+    droplet <-->|Telegram| zach([Zach, Director of Product])
     zach -.->|Yes| gh[GitHub PR]
     gh -.->|checks pass, auto-merge| vercel[Vercel deploy]
     vercel -.-> poke

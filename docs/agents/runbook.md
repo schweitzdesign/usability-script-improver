@@ -55,20 +55,107 @@ Run once, right before deploying (not on every iteration):
   every animation behind reduced-motion, then emulate reduced motion and confirm nothing moves.
 - Re-run `npx tsc --noEmit`, `npm run lint`, `npm run build`.
 
-## Phase 2: agent API and the Support bot (stub)
+## Phase 2: agent API and the Support bot (built and tested)
 
-First step is a read-only look at the Hermes box over SSH: version, where config lives,
-how role profiles and skills are defined, how the Telegram bot is wired, how it is scheduled.
-This section gets rewritten from what is actually there.
+### How it works
 
-Planned shape:
+1. A user sends feedback. A `feedback` row lands with status `new`.
+2. Every 2 minutes a systemd timer on the droplet runs `pokectl sync` (a plain script, zero
+   model tokens). For each new ticket it claims it (`queued`), creates a Hermes kanban task
+   for the `support` profile, subscribes Telegram to that task, and posts
+   `[Support] New ticket POKE-00NN` to Telegram.
+3. The Hermes dispatcher (inside the gateway, ticks every 60 seconds) starts one `support`
+   worker at a time. The worker runs only `pokectl` commands: read the policy, read the
+   ticket, list recent tickets, classify, draft a reply, then complete the task with a
+   `[Support]` summary that Telegram announces.
+4. POKE stores classification, severity, notes, the draft reply, and an audit event for each
+   step. Replies stay drafts unless `AGENT_REPLY_MODE=send`.
+5. Every 30 minutes `pokectl usage-sync` reports the bot's token usage into `usage_events`.
 
-1. POKE gets `/api/agent/*` routes protected by a bearer token (new env var). Endpoints to
-   list new tickets, read one, and write back classification and replies.
-2. Hermes gets a Support profile that calls those routes. It never holds the Supabase key.
-3. Create a separate Anthropic API key for Hermes and set a monthly spend limit in the Console.
-4. Telegram becomes the ping for new feedback and new script submissions.
-5. The Support bot reports its token usage into `usage_events`.
+### Where things live
+
+| Thing | Where |
+|---|---|
+| Agent API (POKE side) | `src/app/api/agent/*`, auth in `src/lib/agent-auth.ts`, rules in `src/lib/tickets.ts` |
+| The agents' command line | `ops/hermes/pokectl`, installed at `/usr/local/bin/pokectl` on the droplet |
+| Its config and token | `/etc/pokectl.env` on the droplet (mode 600) |
+| Timers | `ops/hermes/systemd/*`, installed in `/etc/systemd/system/` |
+| The bot's instructions | `/root/.hermes/profiles/support/SOUL.md` on the droplet |
+| The bot's settings | `/root/.hermes/profiles/support/config.yaml` (model, tools, approvals) |
+| Shared facts and tone | `src/lib/support-policy.ts` (the bot reads it through `pokectl policy`) |
+
+### Operating it (run these in the DigitalOcean console)
+
+```bash
+pokectl ticket recent          # newest tickets and their state
+pokectl ticket get 12          # one ticket, with its history
+hermes kanban list             # what the bots are working on
+hermes kanban watch            # live view
+hermes pause                   # emergency stop: no new work starts
+hermes resume                  # undo the stop
+hermes -p support insights     # support bot token usage
+```
+
+### When something goes wrong
+
+- **A task shows `blocked`:** read why with `hermes kanban show <task id>`. Fix the cause
+  (for example a bad token), then `hermes kanban unblock <task id>` and it reruns. The ticket
+  stays `queued` in the meantime and nothing is replied twice.
+- **A worker crashed:** Hermes notices within about a minute, blocks the task, and Telegram
+  says so. Same recovery as above.
+- **Stop everything:** `hermes pause`. In-flight work finishes, nothing new starts.
+- **Rotate the agent token:** generate a new value, update `AGENT_API_TOKEN` in Vercel
+  (then redeploy) and in `/etc/pokectl.env` on the droplet.
+
+### Safety design
+
+The support bot reads text from members of the public, so it is treated as exposed to prompt
+injection. Layers, all verified with `hermes -p support approvals test` (nothing executes):
+
+- Terminal approvals are `manual`, so anything not allowlisted is refused when no human answers.
+- Only `pokectl *` is allowlisted. Deny rules block secret paths, network tools, scripting
+  languages, and shell chaining or substitution (`; | && $ ` > <` and newlines).
+- The API refuses replies with em or en dashes, duplicate links to later tickets, and invalid
+  status changes. Customer email addresses are never returned to the bot.
+- The agent token only reaches the narrow `/api/agent/*` routes, never the database.
+
+Residual risk, stated plainly: deny rules are policy, not a sandbox. Real containment would be
+Docker as the terminal backend, which is too heavy for this 1 GB droplet. Acceptable while the
+only traffic is the maintainer's; revisit before real users reach the bot.
+
+### Cost (measured)
+
+| What | Measured |
+|---|---|
+| Support bot, per ticket | about 2 cents (1.5 to 3 cents; the first call of a run writes the prompt cache) |
+| 14 sessions including every failure test | $0.28 |
+| Bot prompt size | about 38 KB: 31 KB of tool schemas (kanban alone is 24 KB) plus instructions |
+| Memory | peaked near 680 MB on the 1 GB droplet with 2 GB swap, swap barely used |
+
+Caps in place: `POKE Production` $10 per month and `Hermes agent` $30 per month, set per
+workspace in the Anthropic Console.
+
+### Things the first live runs taught us (all fixed)
+
+- The bot used an em dash despite instructions, so the reply endpoint now rejects them.
+- Two reports of one bug were marked duplicates of each other, so a duplicate link must now
+  point to an earlier ticket.
+- The bot invented a product capability ("you can come back to your grade") when the facts
+  were silent. It now has a never-guess rule, and the true answer is in the shared FAQ.
+- `pokectl ticket recent` returned the oldest tickets, which hid recent duplicates.
+
+### Known gaps
+
+- A blocked or crashed task leaves its ticket `queued` until someone unblocks it. Telegram
+  announces the block, but there is no automatic reminder.
+- Replies are drafts only until `AGENT_REPLY_MODE=send` is set in Vercel.
+- Hermes is 11k commits behind and pinned on purpose; do not run `hermes update` mid-project.
+
+### Removing access when finished
+
+On the droplet: `sed -i '/claude-code-temp-access/d' ~/.ssh/authorized_keys`. Delete the
+`.env.bak*` files in `/root/.hermes/`, and delete the `before-poke-agents` snapshot once you no
+longer need to roll back.
 
 ## Phase 3: PM and Design-Engineer bots (stub)
 

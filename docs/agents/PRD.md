@@ -39,8 +39,10 @@ Three bots with deliberately separate jobs. The boundaries matter more than the 
 - **Job:** be the voice to the customer and do first-round triage.
 - **Inputs:** new rows in `feedback`.
 - **Outputs:** replies to the customer, a classification (bug, usability issue, feature
-  request, user error, question), a severity, notes on duplicates and how often it comes
-  up, and an internal handoff note.
+  request, user error, question, or not actionable for jokes and spam), a severity, a link
+  to the earlier ticket when it is a duplicate, and an internal handoff note.
+- **Answers only from facts:** it may only say what the shared policy facts support, and
+  escalates honestly ("not sure, a person will follow up") when they do not cover a question.
 - **When it is user error or a question:** answers directly, closes the ticket as
   `resolved_by_support`, and does not escalate.
 - **Knowledge it needs:** how POKE works, the SLA in `src/lib/support-policy.ts`, a short
@@ -171,7 +173,7 @@ Placeholders so the PM has a target to prioritize against:
 |---|---|---|
 | 0 | These docs | Done |
 | 1 | Feedback form, `feedback` table, confirmation email, cost ledger, Slack retired | Shipped |
-| 2 | Agent API, Support bot, Telegram as the comms gateway, bots report usage, separate API keys with spend limits | Next |
+| 2 | Agent API, Support bot, Telegram as the comms gateway, bots report usage, separate API keys with spend limits | Built and tested. Measured cost about 2 cents per ticket. See [runbook.md](runbook.md) |
 | 3 | PM bot and Design-Engineer bot | |
 | 4 | One-pager, Yes/No/Ask-more in Telegram, ship pipeline with CI | |
 | 5 | Evals per bot, cost review, alpha-to-beta metrics | |
