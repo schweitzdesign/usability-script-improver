@@ -44,6 +44,7 @@ LOG_DIR = Path(os.environ.get("POKECTL_LOG_DIR", "/var/log/pokectl"))
 BOT_PROFILES = {"support": "support-bot", "pm": "pm-bot", "eng": "eng-bot"}
 ROLE_NAMES = {"support": "Support", "pm": "PM", "eng": "Design-Engineer"}
 REPO_URL = "https://github.com/schweitzdesign/usability-script-improver.git"
+GITHUB_REPO = "schweitzdesign/usability-script-improver"
 TELEGRAM_LIMIT = 3900  # Telegram caps a message at 4096 characters
 REPORT_HOLD_SECONDS = 60  # let the bot finish writing before a ticket is reported
 
@@ -291,11 +292,16 @@ def compose_recommendation_card(item, url):
     return "\n".join(lines)
 
 
-def compose_decision_message(item):
+def compose_decision_message(item, ship_on=False):
     """Plain acknowledgement once Zach has decided, so he always hears what happens next."""
     label, title = item_label(item["item_number"]), item["title"]
     decision, status = item["decision"], item["status"]
-    if decision == "yes" and status == "approved":
+    if decision == "yes" and status == "approved" and ship_on:
+        text = (
+            f"Approved: {label} {title}.\nBuilding it now. I'll message you here when it's live, usually within "
+            "10 minutes. If it needs your review first, I'll say so."
+        )
+    elif decision == "yes" and status == "approved":
         text = (
             f"Approved: {label} {title}.\nImplementation is manual for now: the ship pipeline isn't "
             "built yet, so nothing goes live on its own. I'll tell you here when that changes."
@@ -492,6 +498,10 @@ def cmd_backlog_get(args):
         if i.get(field):
             print(f"{field}={i[field]}")
     print(f"cost: {cost_text(i)}")
+    if i.get("ship_state"):
+        print(f"ship_state={i['ship_state']}" + (f"  pr={i['pr_url']}" if i.get("pr_url") else ""))
+        if i.get("ship_note"):
+            print(f"ship_note={i['ship_note']}")
     if i.get("followup_question"):
         print(f"followup_question={i['followup_question']}")
         print(f"followup_answer={i.get('followup_answer') or '(not answered yet)'}")
@@ -965,7 +975,7 @@ def pickup_decisions(dry_run=False):
     items = ok_or_fail(*call("GET", "/backlog?needs_pickup=1&limit=10"))["items"]
     for i in items:
         n = i["item_number"]
-        message = compose_decision_message(i)
+        message = compose_decision_message(i, ship_enabled())
         if dry_run:
             print(message + "\n" + "-" * 40)
             continue
@@ -988,6 +998,105 @@ def pickup_decisions(dry_run=False):
             print(f"{item_label(n)}: decision picked up")
     if not items:
         print("no decisions waiting")
+
+
+def ship_enabled():
+    """Automatic shipping is on only when both the switch and the GitHub token are set."""
+    return os.environ.get("POKECTL_SHIP") == "on" and bool(os.environ.get("GITHUB_DISPATCH_TOKEN"))
+
+
+def dispatch_ship(item_number):
+    """Start the GitHub build workflow for one item. Returns (ok, error_text)."""
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{GITHUB_REPO}/actions/workflows/ship.yml/dispatches",
+        data=json.dumps({"ref": "main", "inputs": {"item": str(item_number)}}).encode(),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {os.environ['GITHUB_DISPATCH_TOKEN']}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "pokectl/1",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=25) as response:
+            return response.status == 204, f"HTTP {response.status}"
+    except urllib.error.HTTPError as error:
+        return False, f"GitHub said HTTP {error.code}"
+    except urllib.error.URLError as error:
+        return False, f"could not reach GitHub: {error.reason}"
+
+
+def ship_builds(args):
+    """Start the build for each approved change, exactly once."""
+    items = ok_or_fail(*call("GET", "/backlog?needs_ship=1&limit=5"))["items"]
+    for i in items:
+        n = i["item_number"]
+        label = item_label(n)
+        if not ship_enabled():
+            print(f"{label}: approved, but automatic shipping is off, so it stays manual")
+            continue
+        if args.dry_run:
+            print(f"would start building {label}")
+            continue
+        status, started = call("POST", f"/backlog/{n}/ship", {"action": "start"})
+        if status == 409:
+            print(f"{label}: already started, skipping")
+            continue
+        ok_or_fail(status, started)
+        sent, detail = dispatch_ship(n)
+        if not sent:
+            call("POST", f"/backlog/{n}/ship", {"action": "fail", "note": f"The build could not be started: {detail}. Nothing was changed on the live site."})
+            print(f"{label}: could not start the build: {detail}", file=sys.stderr)
+            continue
+        print(f"{label}: build started (auto-merge {'on' if started.get('auto_merge') else 'off: ' + ' '.join(started.get('reasons', []))})")
+    if not items:
+        print("no approved changes waiting to be built")
+
+
+def compose_ship_message(item):
+    """Tell Zach how a build ended, in plain words."""
+    label, title = item_label(item["item_number"]), item["title"]
+    state, note, pr = item["ship_state"], item.get("ship_note") or "", item.get("pr_url") or ""
+    if state == "live":
+        lines = [f"{label} is live in production: {title}.", ""]
+        if item.get("change_summary"):
+            lines += [item["change_summary"], ""]
+        lines.append("Refresh the site to see it.")
+        if pr:
+            lines.append(f"What changed: {pr}")
+        lines.append("To undo it, use Instant Rollback in Vercel, or revert that pull request.")
+        return "\n".join(lines)
+    if state == "needs_review":
+        lines = [f"{label} is built but needs your review before it goes live: {title}.", ""]
+        if note:
+            lines += [note, ""]
+        if pr:
+            lines.append(f"Pull request: {pr}")
+        lines.append("Merge it on GitHub when you're happy, and I'll tell you when it's live.")
+        return "\n".join(lines)
+    lines = [f"{label} could not be built: {title}.", ""]
+    if note:
+        lines += [note, ""]
+    lines.append("Nothing was changed on the live site.")
+    return "\n".join(lines)
+
+
+def report_ship(dry_run=False):
+    """Announce each finished build state once: live, needs review, or failed."""
+    items = ok_or_fail(*call("GET", "/backlog?needs_ship_report=1&limit=10"))["items"]
+    for i in items:
+        n = i["item_number"]
+        message = compose_ship_message(i)
+        if dry_run:
+            print(message + "\n" + "-" * 40)
+            continue
+        if send_card(message):
+            ok_or_fail(*call("POST", f"/backlog/{n}/ship", {"action": "reported", "state": i["ship_state"]}))
+            print(f"{item_label(n)}: told Zach it is {i['ship_state']}")
+    if not items:
+        print("no build results waiting to be reported")
 
 
 TASK_ROW = re.compile(r"^\S+\s+(t_[0-9a-f]+)\s+(\w+)\s+(\S+)\s+(.*)$")
@@ -1045,6 +1154,8 @@ def cmd_sync(args):
         ("queue the Design-Engineer", lambda: queue_engineering(args)),
         ("report recommendations", lambda: report_recommendations(args.dry_run)),
         ("pick up decisions", lambda: pickup_decisions(args.dry_run)),
+        ("start approved builds", lambda: ship_builds(args)),
+        ("report build results", lambda: report_ship(args.dry_run)),
         ("alert on stuck tasks", lambda: alert_blocked(args.dry_run)),
     ]
     failed = []
