@@ -1,0 +1,37 @@
+# Reference copy of what we change on the Hermes `eng` profile (the Design-Engineer), on top of a blank
+# profile created with:
+#   hermes profile create eng --no-skills --no-alias --description "..."
+# The real file lives at /root/.hermes/profiles/eng/config.yaml on the droplet. This copy is for
+# history and review; it contains no secrets (the profile's API key lives in its own .env on the
+# droplet and is never committed).
+#
+# Same safety model as Support and the PM: NO SHELL. The terminal and file toolsets are disabled, so
+# the only things this bot can do are the pokectl tools below and the kanban board tools. It reads
+# code through repo_tree, repo_read, and repo_search, which are locked to one read-only copy of the
+# repo at /opt/poke-repo (refreshed from main whenever the PM requests an assessment). The jail
+# refuses paths outside the copy, .git, and anything named .env*.
+
+model:
+  provider: anthropic
+  default: claude-sonnet-5
+
+platform_toolsets:
+  cli:
+    - kanban
+
+# Added with:
+#   hermes -p eng mcp add pokectl --command /usr/local/bin/pokectl --args mcp --role eng
+# Tools served: backlog_get, repo_tree, repo_read, repo_search, submit_assessment, answer_followup.
+mcp_servers:
+  pokectl:
+    command: /usr/local/bin/pokectl
+    args:
+      - mcp
+      - --role
+      - eng
+    enabled: true
+
+# Same cost lever as the PM (see ops/hermes/pm/config.overrides.yaml).
+tools:
+  tool_search:
+    enabled: "off"

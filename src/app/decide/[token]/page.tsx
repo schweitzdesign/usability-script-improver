@@ -5,10 +5,13 @@ import {
   EFFORT_LABELS,
   KIND_LABELS,
   RECOMMENDATION_LABELS,
+  STANCE_LABELS,
   allowsNo,
   describeCost,
   formatItemNumber,
   lookupDecisionLink,
+  riskFlags,
+  stanceOf,
   type Recommendation,
 } from "@/lib/backlog";
 import { getSupabaseServerClient } from "@/lib/supabase";
@@ -57,8 +60,11 @@ function Notice({ children }: { children: React.ReactNode }) {
 // Written top-down like a news story: the verdict and what changes for people come first,
 // then the reasoning, then the decision, and the supporting evidence last, folded away.
 function Brief({ lookup, token }: { lookup: Lookup; token: string }) {
-  const { item, state } = lookup;
+  const { item, state, assessment } = lookup;
   const rec = item.recommendation as Recommendation | null;
+  const flags = assessment ? riskFlags(assessment) : [];
+  const ownStance = stanceOf(rec);
+  const disagrees = Boolean(assessment && ownStance && assessment.stance !== ownStance);
   const reports = item.tickets.length;
   const kind = KIND_LABELS[item.kind];
   const open = state === "open";
@@ -80,6 +86,11 @@ function Brief({ lookup, token }: { lookup: Lookup; token: string }) {
             </h2>
             <p className="font-display text-lg font-semibold">{RECOMMENDATION_LABELS[rec]}</p>
             {item.change_summary ? <p className="text-base leading-relaxed">{item.change_summary}</p> : null}
+            {flags.length > 0 ? (
+              <p role="note" className="mt-1 rounded-lg border border-vermilion-ink/40 bg-vermilion/10 p-3 text-sm">
+                <strong>Needs your second approval:</strong> this {flags.join(", and this ")}.
+              </p>
+            ) : null}
           </div>
 
           <dl className="flex flex-col gap-4 border-t pt-5">
@@ -95,10 +106,16 @@ function Brief({ lookup, token }: { lookup: Lookup; token: string }) {
               note={
                 item.ease_source === "pm_guess"
                   ? "An engineer has not looked at this yet, so this is the product manager bot's estimate."
-                  : undefined
+                  : "Assessed by the Design-Engineer, who reviewed the code."
               }
             />
             <Row label="Cost" value={capitalize(describeCost(item))} />
+            {disagrees && assessment ? (
+              <Row
+                label="The Design-Engineer saw this differently"
+                value={`It leaned toward: ${STANCE_LABELS[assessment.stance]}. ${assessment.why}`}
+              />
+            ) : null}
           </dl>
         </section>
       ) : null}
@@ -136,6 +153,18 @@ function Brief({ lookup, token }: { lookup: Lookup; token: string }) {
             ))}
           </ul>
         </Fold>
+        {assessment ? (
+          <Fold title="Technical detail from the Design-Engineer">
+            <dl className="flex flex-col gap-3">
+              <Row label="Files this would touch" value={assessment.files_likely_touched.join(", ") || null} />
+              <Row label="Existing pieces we would reuse" value={assessment.reuse_note} />
+              <Row label="Loading, empty, error, and success states" value={assessment.states_note} />
+              <Row label="Accessibility" value={assessment.accessibility_note} />
+              <Row label="Follow-up question from the product manager bot" value={item.followup_question} />
+              <Row label="The Design-Engineer's answer" value={item.followup_answer} />
+            </dl>
+          </Fold>
+        ) : null}
         <Fold title={`How we scored it${item.ice_score !== null ? `: ${Number(item.ice_score).toFixed(1)} out of 10` : ""}`}>
           {item.ice_score !== null ? (
             <dl className="flex flex-col gap-3">

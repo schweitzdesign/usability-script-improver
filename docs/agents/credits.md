@@ -24,3 +24,19 @@ this repository, and none of its files are committed here. Because the library i
 for non-commercial use with share-alike terms, treat the PM instructions as a derivative of
 those ideas: credit stays with this file, and any reuse should stay non-commercial and carry
 the same license. This project is a course capstone and not commercial.
+
+## design-engineer (ddruids)
+
+The Design-Engineer bot's instructions ([`ops/hermes/eng/SOUL.md`](../../ops/hermes/eng/SOUL.md))
+borrow a few ideas from [ddruids/design-engineer](https://github.com/ddruids/design-engineer), an
+MIT-licensed Claude skill for design engineering, which we found through research on existing
+patterns:
+
+- Every feature considers four states: loading, empty, error, and success.
+- Check existing components and design tokens before inventing new ones.
+- Accessibility is part of the work, not an afterthought.
+- Scale the work to the ask: name worthwhile extras in one line instead of building them.
+
+The skill itself is about turning Figma designs into code and is a reference for a later build
+stage, not a dependency. The instructions here are written from scratch. No text is copied, so
+the MIT notice isn't required, and the credit is given here anyway.

@@ -20,7 +20,7 @@ platform_toolsets:
 # Added with:
 #   hermes -p pm mcp add pokectl --command /usr/local/bin/pokectl --args mcp --role pm
 # Tools served: ticket_get, backlog_list, backlog_get, backlog_create, backlog_attach,
-# backlog_update, budget_get, submit_recommendation.
+# backlog_update, request_assessment, request_followup, budget_get, submit_recommendation.
 mcp_servers:
   pokectl:
     command: /usr/local/bin/pokectl

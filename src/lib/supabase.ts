@@ -137,6 +137,29 @@ export type BacklogItemRow = {
   decision_note: string | null;
   decided_at: string | null;
   decision_picked_up_at: string | null;
+  followup_rounds: number;
+  followup_question: string | null;
+  followup_answer: string | null;
+};
+
+export type BacklogAssessmentRow = {
+  id: string;
+  item_id: string;
+  created_at: string;
+  stance: "change" | "no_change" | "investigate";
+  experience_summary: string;
+  why: string;
+  risk: string;
+  effort_size: "S" | "M" | "L";
+  effort_why: string;
+  touches_database: boolean;
+  touches_dependencies: boolean;
+  touches_environment: boolean;
+  touches_ai_grading: boolean;
+  accessibility_note: string | null;
+  states_note: string | null;
+  reuse_note: string | null;
+  files_likely_touched: string[];
 };
 
 type BacklogItemInsert = Pick<BacklogItemRow, "title" | "kind"> &
@@ -174,6 +197,12 @@ type Database = {
         Row: BacklogItemRow;
         Insert: BacklogItemInsert;
         Update: Partial<Omit<BacklogItemRow, "id" | "item_number" | "created_at" | "ice_score">>;
+        Relationships: [];
+      };
+      backlog_assessments: {
+        Row: BacklogAssessmentRow;
+        Insert: Omit<BacklogAssessmentRow, "id" | "created_at">;
+        Update: Partial<Omit<BacklogAssessmentRow, "id" | "created_at">>;
         Relationships: [];
       };
       backlog_item_tickets: {

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { z } from "zod";
-import type { BacklogItemRow, getSupabaseServerClient, Json } from "@/lib/supabase";
+import type { BacklogAssessmentRow, BacklogItemRow, getSupabaseServerClient, Json } from "@/lib/supabase";
 
 type Supabase = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
 
@@ -20,6 +20,7 @@ export const BACKLOG_STATUSES = [
 export const RECOMMENDATIONS = ["build_now", "build_later", "investigate", "drop"] as const;
 export const EFFORT_SIZES = ["S", "M", "L"] as const;
 export const DECISION_CHOICES = ["yes", "no", "more"] as const;
+export const EFFORT_LABELS = { S: "Small", M: "Medium", L: "Large" } as const;
 
 export type BacklogStatus = (typeof BACKLOG_STATUSES)[number];
 export type Recommendation = (typeof RECOMMENDATIONS)[number] | "defer" | "needs_info";
@@ -72,14 +73,16 @@ export const problemSchema = text(500);
 export const userStorySchema = text(500);
 const score = z.number().int().min(1).max(10);
 
+// When the Design-Engineer has assessed an item, its wording is used for the headline (builds
+// only), the risk (builds only), and the effort, so the PM may leave those out. The route
+// requires them when there is no assessment, or for no change and investigate.
 export const recommendationSchema = z.object({
   recommendation: z.enum(RECOMMENDATIONS),
-  // The headline: what changes for the user, in plain language.
-  change_summary: text(500),
+  change_summary: text(500).optional(),
   why: text(450),
-  risk: text(350),
-  effort_size: z.enum(EFFORT_SIZES),
-  effort_why: text(300),
+  risk: text(350).optional(),
+  effort_size: z.enum(EFFORT_SIZES).optional(),
+  effort_why: text(300).optional(),
   build_cost_usd: z.number().min(0).max(1000).optional(),
   run_cost_delta_usd_month: z.number().min(-1000).max(1000).optional(),
   // The PM re-states its scores when it recommends, so the card and the rank always agree.
@@ -90,6 +93,96 @@ export const recommendationSchema = z.object({
 });
 
 export const scoreSchema = score;
+
+// --- The Design-Engineer's assessment ------------------------------------------------
+
+export const STANCES = ["change", "no_change", "investigate"] as const;
+
+export const assessmentSchema = z.object({
+  stance: z.enum(STANCES),
+  experience_summary: text(600),
+  why: text(450),
+  risk: text(400),
+  effort_size: z.enum(EFFORT_SIZES),
+  effort_why: text(350),
+  touches_database: z.boolean(),
+  touches_dependencies: z.boolean(),
+  touches_environment: z.boolean(),
+  touches_ai_grading: z.boolean(),
+  accessibility_note: text(300).optional(),
+  states_note: text(300).optional(),
+  reuse_note: text(300).optional(),
+  files_likely_touched: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1)
+        .max(200)
+        .refine((p) => !p.startsWith("/") && !p.includes(".."), { message: "Use paths relative to the repo root." })
+    )
+    .max(15)
+    .default([]),
+  actor: z.string().trim().min(1).max(40).optional().default("eng-bot"),
+});
+
+/** Size means work only; the engineer's size fixes the band the PM's Ease must fall in. */
+export const EASE_BANDS = { S: [8, 10], M: [5, 7], L: [1, 4] } as const;
+
+export function easeBandMessage(size: keyof typeof EASE_BANDS) {
+  const [lo, hi] = EASE_BANDS[size];
+  return `Engineering sized this ${EFFORT_LABELS[size]}, so Ease must be ${lo} to ${hi}.`;
+}
+
+export const followupSchema = z.object({
+  question: text(400),
+  actor: z.string().trim().min(1).max(40).optional().default("pm-bot"),
+});
+export const followupAnswerSchema = z.object({
+  answer: text(600),
+  actor: z.string().trim().min(1).max(40).optional().default("eng-bot"),
+});
+
+const STANCE_OF: Record<string, (typeof STANCES)[number]> = {
+  build_now: "change",
+  build_later: "change",
+  drop: "no_change",
+  investigate: "investigate",
+};
+
+export function stanceOf(recommendation: string | null) {
+  return recommendation ? (STANCE_OF[recommendation] ?? null) : null;
+}
+
+export const STANCE_LABELS: Record<(typeof STANCES)[number], string> = {
+  change: "make a change",
+  no_change: "make no change",
+  investigate: "find out more first",
+};
+
+/** The flags that need Zach's second approval, in plain words. */
+export function riskFlags(a: Pick<
+  BacklogAssessmentRow,
+  "touches_database" | "touches_dependencies" | "touches_environment" | "touches_ai_grading"
+>) {
+  return [
+    a.touches_database && "changes the database",
+    a.touches_dependencies && "adds or changes a software dependency",
+    a.touches_environment && "changes environment settings",
+    a.touches_ai_grading && "changes how the AI grades, which affects every user",
+  ].filter((f): f is string => Boolean(f));
+}
+
+export async function latestAssessment(supabase: Supabase, itemId: string) {
+  const { data } = await supabase
+    .from("backlog_assessments")
+    .select("*")
+    .eq("item_id", itemId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data ?? null;
+}
 
 export const decisionBodySchema = z.object({
   token: z.string().trim().min(20).max(200),
@@ -111,7 +204,7 @@ export async function logBacklogEvent(
 }
 
 export const ITEM_COLUMNS =
-  "id, item_number, created_at, updated_at, title, kind, status, problem, user_story, impact, confidence, ease, ease_source, ice_score, recommendation, change_summary, why, risk, effort_size, effort_why, build_cost_usd, run_cost_delta_usd_month, budget_used_pct, recommendation_reported_at, decision, decision_note, decided_at, decision_picked_up_at";
+  "id, item_number, created_at, updated_at, title, kind, status, problem, user_story, impact, confidence, ease, ease_source, ice_score, recommendation, change_summary, why, risk, effort_size, effort_why, build_cost_usd, run_cost_delta_usd_month, budget_used_pct, recommendation_reported_at, decision, decision_note, decided_at, decision_picked_up_at, followup_rounds, followup_question, followup_answer";
 
 export type ItemTicket = {
   ticket_number: number;
@@ -186,7 +279,12 @@ export function allowsNo(recommendation: string | null) {
 
 export type LinkLookup =
   | { state: "invalid" }
-  | { state: "expired" | "used" | "not_open" | "open"; item: BacklogItemRow & { tickets: ItemTicket[] }; choice: DecisionChoice | null };
+  | {
+      state: "expired" | "used" | "not_open" | "open";
+      item: BacklogItemRow & { tickets: ItemTicket[] };
+      assessment: BacklogAssessmentRow | null;
+      choice: DecisionChoice | null;
+    };
 
 /** Read-only check used to render the decision page. It never consumes the link. */
 export async function lookupDecisionLink(supabase: Supabase, token: string): Promise<LinkLookup> {
@@ -213,7 +311,7 @@ export async function lookupDecisionLink(supabase: Supabase, token: string): Pro
       : row.status !== "recommended"
         ? "not_open"
         : "open";
-  return { state, item, choice: link.choice };
+  return { state, item, assessment: await latestAssessment(supabase, row.id), choice: link.choice };
 }
 
 export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
@@ -225,7 +323,6 @@ export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   drop: "Make no change",
 };
 
-export const EFFORT_LABELS = { S: "Small", M: "Medium", L: "Large" } as const;
 
 export const KIND_LABELS: Record<(typeof BACKLOG_KINDS)[number], string> = {
   bug: "Bug",

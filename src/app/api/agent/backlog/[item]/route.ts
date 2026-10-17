@@ -6,6 +6,7 @@ import {
   ITEM_COLUMNS,
   PM_SETTABLE_STATUSES,
   canTransitionItem,
+  latestAssessment,
   logBacklogEvent,
   parseItemNumber,
   problemSchema,
@@ -50,7 +51,12 @@ export async function GET(request: Request, { params }: Params) {
     .limit(40);
 
   const [item] = await withTickets(supabase, [row], true);
-  return NextResponse.json({ ok: true, item, events: events ?? [] });
+  return NextResponse.json({
+    ok: true,
+    item,
+    assessment: await latestAssessment(supabase, row.id),
+    events: events ?? [],
+  });
 }
 
 const patchSchema = z.object({
