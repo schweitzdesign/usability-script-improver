@@ -24,6 +24,8 @@ const DOTS = [
  * center, standing in for the generic spinner at the app's most visible
  * loading moment. Falls back to a slow static opacity pulse under
  * prefers-reduced-motion — still communicates activity without motion.
+ *
+ * Purely presentational: it reads and writes no data of its own.
  */
 export function PokeLoader() {
   const reduce = useReducedMotion();
