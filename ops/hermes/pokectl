@@ -318,7 +318,12 @@ def split_for_telegram(text, limit=TELEGRAM_LIMIT):
 
 
 def send_telegram(text):
-    """Send plain text to Zach's Telegram through Hermes (no model involved)."""
+    """Send plain text to Zach's Telegram through Hermes (no model involved).
+
+    POKECTL_TELEGRAM=off (in /etc/pokectl.env) silences it, for test runs with throwaway tickets."""
+    if os.environ.get("POKECTL_TELEGRAM") == "off":
+        print(f"(telegram off) {one_line(text, 80)}", file=sys.stderr)
+        return True
     result = subprocess.run(
         ["hermes", "send", "-t", "telegram", "-f", "-"],
         input=text, capture_output=True, text=True, timeout=60,

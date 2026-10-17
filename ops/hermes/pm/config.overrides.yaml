@@ -29,3 +29,12 @@ mcp_servers:
       - --role
       - pm
     enabled: true
+
+# Cost lever, measured 2026-10-17 on throwaway tickets: with Hermes' default lazy tool loading the
+# PM spent about $0.19 on a new item and $0.15 on a duplicate, because every MCP call needed extra
+# tool_search, tool_describe, and tool_call steps and each step re-read the whole prompt. Turning
+# it off loads the 8 PM tools directly: about $0.13 and $0.08, roughly 39 percent less, with the
+# same quality of output. Set with: hermes -p pm config set tools.tool_search.enabled off
+tools:
+  tool_search:
+    enabled: "off"
