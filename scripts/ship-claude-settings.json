@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(src/**)",
+      "Read(package.json)",
+      "Read(tsconfig.json)",
+      "Glob",
+      "Grep",
+      "Edit(src/components/**)",
+      "Write(src/components/**)",
+      "Edit(src/app/page.tsx)",
+      "Edit(src/app/layout.tsx)",
+      "Edit(src/app/globals.css)",
+      "Edit(src/app/demo/**)"
+    ],
+    "deny": [
+      "Bash",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "Read(.env*)",
+      "Read(.git/**)",
+      "Read(.github/**)",
+      "Read(/proc/**)",
+      "Edit(src/components/ui/**)",
+      "Write(src/components/ui/**)",
+      "Edit(.github/**)",
+      "Write(.github/**)"
+    ]
+  }
+}

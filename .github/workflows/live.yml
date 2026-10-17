@@ -1,0 +1,31 @@
+name: live
+
+# When Vercel finishes a Production deployment, find out whether it carried an automatic change
+# (its commit message holds "POKE-SHIP B-<number>") and tell POKE it is live.
+
+on: deployment_status
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    if: github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      POKE_URL: https://usability-script-improver.vercel.app
+      SHIP_API_TOKEN: ${{ secrets.SHIP_API_TOKEN }}
+      SHA: ${{ github.event.deployment.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.deployment.sha }}
+          fetch-depth: 1
+      - name: Tell POKE it is live
+        run: |
+          item=$(git log -1 --format=%B "$SHA" | grep -oE 'POKE-SHIP B-[0-9]+' | head -1 | grep -oE '[0-9]+$' || true)
+          if [ -z "$item" ]; then echo "Not an automatic change."; exit 0; fi
+          curl -sS -o /dev/null -w "live B-$item: HTTP %{http_code}\n" -X POST \
+            -H "Authorization: Bearer $SHIP_API_TOKEN" -H "Content-Type: application/json" \
+            "$POKE_URL/api/ship/$item" -d '{"state":"live"}'
