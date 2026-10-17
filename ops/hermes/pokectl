@@ -686,7 +686,10 @@ def cmd_followup_answer(args):
 
 
 def cmd_request_assessment(args):
-    """PM: hand an item to the Design-Engineer, and queue the PM's own finalize step behind it."""
+    """PM: ask for a Design-Engineer assessment. This only records the request in POKE.
+
+    Hermes does not let a running bot create board tasks, so the sync (which runs outside any
+    bot) sees the request and creates the Design-Engineer's task and the PM's finalize task."""
     n = parse_item_number(args.item)
     item = fetch_item(n)
     if item["status"] == "assessing":
@@ -694,53 +697,77 @@ def cmd_request_assessment(args):
     if item["status"] not in ("new", "needs_info"):
         fail(f"a {item['status']} item can't be assessed")
     ok_or_fail(*call("PATCH", f"/backlog/{n}", {"status": "assessing", "actor": "pm-bot"}))
-    refresh_repo()
-    stamp = int(time.time())
-    label = item_label(n)
-    body = (
-        f"Assess backlog item {label}. Follow your SOUL.md: read it with backlog_get, read the real code with the "
-        f"repo tools, then call submit_assessment. Finish with a one-line summary beginning [Eng]."
-    )
-    focus = (getattr(args, "focus", None) or "").strip()
-    if focus:
-        body += f"\n\nThe PM asks you to look at this in particular: {focus}"
-    result, eng_task = create_task(f"Eng {label} assess: {one_line(item['title'], 45)}", "eng", f"poke-eng-{n}-{stamp}", body, "20m")
-    if result.returncode != 0 or not eng_task:
-        ok_or_fail(*call("PATCH", f"/backlog/{n}", {"status": item["status"], "actor": "pm-bot"}))
-        fail(f"could not create the Design-Engineer's task: {one_line(result.stderr or result.stdout, 200)}")
-    final_body = (
-        f"Finalize backlog item {label} now that the Design-Engineer has assessed it. Follow the Finalize steps in your "
-        "SOUL.md. Finish with a one-line summary beginning [PM]."
-    )
-    result, pm_task = create_task(f"PM {label} finalize: {one_line(item['title'], 45)}", "pm", f"poke-pm-final-{n}-{stamp}", final_body, parents=[eng_task])
-    if result.returncode != 0:
-        fail(f"the assessment was requested but your finalize task could not be created: {one_line(result.stderr or result.stdout, 200)}")
-    print(f"assessment requested for {label}; your finalize step is queued behind it. Finish this task now.")
+    print(f"assessment requested for {item_label(n)}. The Design-Engineer's task and your finalize task are created "
+          "within a couple of minutes. Finish this task now.")
 
 
 def cmd_request_followup(args):
-    """PM: one follow-up question to the Design-Engineer, answered before the second finalize."""
+    """PM: one follow-up question to the Design-Engineer. Recorded in POKE; the sync queues the tasks."""
     n = parse_item_number(args.item)
     ok_or_fail(*call("POST", f"/backlog/{n}/followup", {"question": args.question, "actor": "pm-bot"}))
-    item = fetch_item(n)
-    refresh_repo()
-    stamp, label = int(time.time()), item_label(n)
-    body = (
-        f"The PM has one follow-up question on {label}. Read it with backlog_get (see followup_question), look at the "
-        f"code again if you need to, and answer with answer_followup in a few plain sentences. Finish with a one-line "
-        f"summary beginning [Eng]."
-    )
-    result, eng_task = create_task(f"Eng {label} follow-up: {one_line(item['title'], 40)}", "eng", f"poke-eng-fu-{n}-{stamp}", body, "20m")
-    if result.returncode != 0 or not eng_task:
-        fail(f"could not create the Design-Engineer's task: {one_line(result.stderr or result.stdout, 200)}")
-    final_body = (
-        f"Finalize backlog item {label} again now that the Design-Engineer has answered your follow-up. This is the "
-        "last round: recommend now. Finish with a one-line summary beginning [PM]."
-    )
-    result, pm_task = create_task(f"PM {label} finalize (round 2): {one_line(item['title'], 35)}", "pm", f"poke-pm-final2-{n}-{stamp}", final_body, parents=[eng_task])
-    if result.returncode != 0:
-        fail(f"the question was asked but your finalize task could not be created: {one_line(result.stderr or result.stdout, 200)}")
-    print(f"follow-up sent for {label}; your second finalize step is queued behind the answer. Finish this task now.")
+    print(f"follow-up question saved for {item_label(n)}. The Design-Engineer's task and your second finalize task are "
+          "created within a couple of minutes. Finish this task now.")
+
+
+def queue_engineering(args):
+    """Create the Design-Engineer's board task, and the PM's finalize task behind it, for each item that needs one."""
+    items = ok_or_fail(*call("GET", "/backlog?status=assessing&limit=20"))["items"]
+    refreshed = False
+    for i in items:
+        n = i["item_number"]
+        label = item_label(n)
+        detail = fetch_item(n)
+        a = detail.get("assessment")
+        decided = i.get("decided_at")
+        # An assessment older than the Director's last decision is stale: "Ask more" reopened the item.
+        current = bool(a) and (not decided or a["created_at"] > decided)
+        if not current:
+            kind, epoch = "assess", re.sub(r"\W", "", decided or "first")
+        elif i.get("followup_question") and not i.get("followup_answer"):
+            kind, epoch = "followup", "fu"
+        else:
+            continue
+        if args.dry_run:
+            print(f"would queue the Design-Engineer ({kind}) for {label}")
+            continue
+        if not refreshed:
+            refresh_repo()
+            refreshed = True
+
+        title = one_line(i["title"], 40)
+        if kind == "assess":
+            eng_body = (
+                f"Assess backlog item {label}. Follow your SOUL.md: read it with backlog_get, read the real code with the "
+                "repo tools, then call submit_assessment. If the item shows a decision note from the Director, that is the "
+                "question to answer. Finish with a one-line summary beginning [Eng]."
+            )
+            eng_title, final_title = f"Eng {label} assess: {title}", f"PM {label} finalize: {title}"
+            final_body = (
+                f"Finalize backlog item {label} now that the Design-Engineer has assessed it. Follow the finalize steps in "
+                "your SOUL.md. Finish with a one-line summary beginning [PM]."
+            )
+        else:
+            eng_body = (
+                f"The PM has one follow-up question on {label}. Read it with backlog_get (see followup_question), look at "
+                "the code again if you need to, and answer with answer_followup in a few plain sentences. Finish with a "
+                "one-line summary beginning [Eng]."
+            )
+            eng_title, final_title = f"Eng {label} follow-up: {title}", f"PM {label} finalize (round 2): {title}"
+            final_body = (
+                f"Finalize backlog item {label} again now that the Design-Engineer has answered your follow-up. This is the "
+                "last round: recommend now. Finish with a one-line summary beginning [PM]."
+            )
+        result, eng_task = create_task(eng_title, "eng", f"poke-eng-{kind}-{n}-{epoch}", eng_body, "20m")
+        if result.returncode != 0 or not eng_task:
+            print(f"{label}: could not create the Design-Engineer task: {one_line(result.stderr or result.stdout, 200)}", file=sys.stderr)
+            continue
+        result, pm_task = create_task(final_title, "pm", f"poke-pm-final-{kind}-{n}-{epoch}", final_body, parents=[eng_task])
+        if result.returncode != 0:
+            print(f"{label}: could not create the PM finalize task: {one_line(result.stderr or result.stdout, 200)}", file=sys.stderr)
+            continue
+        print(f"{label}: Design-Engineer {kind} queued as task {eng_task}, PM finalize waits on it")
+    if not items:
+        print("no items waiting for the Design-Engineer")
 
 
 def cmd_budget(_args):
@@ -1015,6 +1042,7 @@ def cmd_sync(args):
         ("queue new tickets", lambda: queue_new_tickets(args)),
         ("report finished tickets", lambda: report_finished(args.dry_run)),
         ("hand tickets to the PM", lambda: queue_pm_tickets(args)),
+        ("queue the Design-Engineer", lambda: queue_engineering(args)),
         ("report recommendations", lambda: report_recommendations(args.dry_run)),
         ("pick up decisions", lambda: pickup_decisions(args.dry_run)),
         ("alert on stuck tasks", lambda: alert_blocked(args.dry_run)),
@@ -1278,7 +1306,7 @@ def tool_submit_recommendation(a):
 
 def tool_request_assessment(a):
     require(a, "item")
-    return run_command(cmd_request_assessment, item=str(a["item"]), focus=a.get("focus"))
+    return run_command(cmd_request_assessment, item=str(a["item"]))
 
 
 def tool_request_followup(a):
@@ -1405,10 +1433,10 @@ PM_TOOLS = [
     },
     {
         "name": "request_assessment",
-        "description": "Hand an item to the Design-Engineer, who reads the real code and returns an assessment. Your own finalize step is queued automatically behind it, so after calling this you finish your current task. Use it on every new item before recommending.",
+        "description": "Ask for a Design-Engineer assessment of an item. The system creates the engineer's task and your own finalize task within a couple of minutes, so after calling this you finish your current task. Use it on every new item before recommending. To point the engineer at something specific, put it in the item's problem text first with backlog_update.",
         "inputSchema": {
             "type": "object",
-            "properties": {"item": ITEM_NUMBER, "focus": {"type": "string", "description": "Optional: one thing you want the Design-Engineer to look at in particular."}},
+            "properties": {"item": ITEM_NUMBER},
             "required": ["item"], "additionalProperties": False,
         },
         "handler": tool_request_assessment,
