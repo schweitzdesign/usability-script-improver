@@ -6,6 +6,8 @@ const SIZES = {
   lg: "text-6xl sm:text-7xl",
 } as const;
 
+// The POKE wordmark: the O is a forest dot and the vermilion dot ends the word.
+// Screen readers get the plain text "POKE"; the styled letters are hidden.
 export function Wordmark({
   size = "md",
   className,
