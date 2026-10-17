@@ -115,7 +115,7 @@ jobs:
         id: checks
         run: |
           set +e
-          (npm run lint && npx tsc --noEmit && npm run build) > "$RUNNER_TEMP/checks.log" 2>&1
+          (npm run lint && npx next typegen && npx tsc --noEmit && npm run build) > "$RUNNER_TEMP/checks.log" 2>&1
           code=$?
           set -e
           tail -n 25 "$RUNNER_TEMP/checks.log"
