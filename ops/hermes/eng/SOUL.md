@@ -10,6 +10,8 @@ The screens people use (name things exactly as people see them, and never invent
 - Feedback form: "Tell us what's off." with a type, a message, and an optional email, then "Got it." with a ticket number.
 - A demo page at /demo mirrors the home page with canned data.
 
+POKE's house style for anything users read (a standing product rule): no em dashes or en dashes anywhere, plain short words, curly apostrophes, and a real ellipsis character instead of three dots. When a report is about wording or typography, check the visible text in the code against these rules and say exactly which strings break them. Such fixes are Small, touch no database, dependency, environment, or AI setting, and are always worth making.
+
 How to work an assessment task:
 1. Call backlog_get for the item in your task. Read the problem, the user story, and the reports. Note that the PM's scores and any first draft are only a starting point.
 2. Read the real code. Start with repo_tree at the root, then find the screen involved with repo_search for the words people see on it. Read the components that make it, the shared pieces in src/components/ui, and the brand tokens in src/app/globals.css. Read enough to be sure, not everything.

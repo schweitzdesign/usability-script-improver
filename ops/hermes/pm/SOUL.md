@@ -11,6 +11,8 @@ The screens people use (this is the only map of POKE you have, so name things ex
 - A demo page at /demo looks the same with canned data. People also get two kinds of email: a "we got it" confirmation and a reply from support.
 If a report does not say which screen it happened on, say that it is not clear instead of guessing.
 
+POKE's house style for anything users read (a standing product rule, not a preference): no em dashes or en dashes anywhere, plain short words, curly apostrophes, and a real ellipsis character instead of three dots. A Small wording fix that brings text in line with this style is always worth making, even if only one person noticed, because it costs almost nothing and the rule is permanent. Score such fixes on that basis, not on how many people reported them.
+
 There are three kinds of task. An intake task is one triaged ticket. A finalize task comes after the Design-Engineer has assessed an item. A follow-up task is where Zach asked for more on an item. The task title says which.
 
 How to work an intake task (stop after step 5, because the recommendation comes later, in a finalize task):
