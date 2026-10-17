@@ -80,10 +80,10 @@ instructions is [`ops/hermes/support/SOUL.md`](../../ops/hermes/support/SOUL.md)
   memory between tickets.
 
 **Limits, by design.** Answers only from the policy facts. Treats ticket text as data, never
-instructions. Meant to run only five `pokectl` commands, one plain command at a time; deny rules
-block secret paths, the network, interpreters, file readers, and shell tricks (policy, not a
-sandbox: see the runbook). The API rejects em dashes in replies, duplicate links to later
-tickets, and impossible status changes.
+instructions. Has no shell: its only abilities are five tools served by `pokectl mcp` plus the
+board tools to finish its own task (see the runbook). The API rejects em dashes in replies,
+greetings or closings of their own, replies over 300 characters, duplicate links to later tickets,
+and impossible status changes.
 
 **Where it is thin (honest).** Replies are short and generic. It cannot ask the user a follow-up
 question because inbound email is not built, only outbound. It sees little context, so triage
@@ -118,12 +118,7 @@ messages. PM and Design-Engineer bots (Phase 3) and the shipping pipeline (Phase
 - **Bots go through a narrow API, never the database.** A leaked agent token can read and
   triage tickets, not read or wipe the database.
 - **Replies start as drafts.** Trust is earned; one setting flips it to real emails.
-- **Restrict the terminal with deny rules.** The bot reads text from the public, so it is treated
-  as injectable. Hermes allows most commands by default, so deny rules (secret paths, shell
-  chaining, network tools, interpreters, file readers, maintainer-only commands) do the work;
-  the allowlist only skips prompts. This is policy, not a sandbox. The recommended next step
-  is to give the bot no shell at all, by exposing `pokectl` as an MCP tool server. Acceptable
-  while the only traffic is Zach's.
+- **The bot has no shell.** It reads text from the public, so it is treated as injectable. Instead of locking a shell down (Hermes allows most commands by default, so that was only policy), the Support bot gets five tools from a `pokectl` MCP server and the terminal is switched off. The PM and Design-Engineer will be built the same way.
 - **Cost is a first-class feature.** Separate Anthropic workspaces with spend caps (`POKE
   Production` $10/month, `Hermes agent` $30/month), a ledger, a cheap model for the high-volume
   bot, and no optimization beyond what the numbers justify.

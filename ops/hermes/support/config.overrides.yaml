@@ -1,138 +1,38 @@
-# Reference copy of what we changed on the Hermes `support` profile, on top of
-# a blank profile created with:
+# Reference copy of what we changed on the Hermes `support` profile, on top of a blank
+# profile created with:
 #   hermes profile create support --no-skills --no-alias --description "..."
 # The real file lives at /root/.hermes/profiles/support/config.yaml on the droplet.
-# This copy is for history and review; it contains no secrets (the profile's API
-# key lives in its own .env on the droplet and is never committed).
+# This copy is for history and review; it contains no secrets (the profile's API key
+# lives in its own .env on the droplet and is never committed).
 #
-# Safety model, verified with `hermes -p support approvals test -- <command>`
-# (nothing executes). Hermes allows most commands by default, so the deny rules below
-# do the real work: they block secret paths, shell chaining and substitution, network
-# tools, interpreters, file readers, and the maintainer-only pokectl commands. These are
-# policy, not a sandbox. See docs/agents/runbook.md.
+# Safety model (changed 2026-10-17): the bot has NO SHELL. The terminal toolset is
+# disabled, so the only things it can do are the five pokectl tools below and the
+# kanban board tools. That replaces the earlier approach of an allowlist plus 89 deny
+# rules, which was only policy: Hermes allows most commands by default and a shell
+# glob could dodge a path rule. Those rules are still in the live file but unused; they
+# are in git history (commit 7b8c1cb) if the terminal is ever turned back on.
 
 model:
   provider: anthropic
   default: claude-haiku-4-5
 
-# Toolsets, set with `hermes -p support tools disable ...` / `enable kanban`.
-# Enabled: terminal, kanban. Everything else disabled to keep the prompt small
-# (kanban alone is about 24 KB of tool schemas).
+# Built-in toolsets enabled for this profile: kanban only (to finish its own task).
+# Set with `hermes -p support tools disable terminal` after enabling kanban.
+platform_toolsets:
+  cli:
+    - kanban
 
-approvals:
-  mode: manual
-  timeout: 20
-  cron_mode: deny
-  single_query_mode: deny
-  unattended_mode: deny
-  # IMPORTANT: Hermes allows most commands by default. The allowlist below only skips the
-  # prompt for commands that LOOK dangerous; it does NOT forbid everything else. These deny
-  # rules are what actually restrict the bot, and they are policy, not a sandbox (a shell
-  # glob like /r?ot can dodge a path match). The stronger fix is to give the bot no shell:
-  # expose pokectl as an MCP tool server and disable the terminal toolset.
-  deny:
-    # Paths a command must never name
-    - "*.env*"
-    - "*pokectl*env*"
-    - "*.hermes*"
-    - "*/etc/*"
-    - "*/root*"
-    - "*/proc/*"
-    - "*/var/lib*"
-    - "*/var/log*"
-    # Shell metacharacters: no chaining, substitution, or redirection inside an allowed command
-    - "*$*"
-    - "*`*"
-    - "*&&*"
-    - "*||*"
-    - "*|*"
-    - "*;*"
-    - "*>*"
-    - "*<*"
-    - "*\n*"
-    # pokectl commands that are for the maintainer, not the bot (they can read the customer email or post to Telegram)
-    - "pokectl sync*"
-    - "pokectl report*"
-    - "pokectl usage-sync*"
-    - "pokectl ticket story*"
-    # Programs, anchored at the start so ordinary reply text can't trip them
-    - "env"
-    - "env *"
-    - "printenv*"
-    - "export*"
-    - "set *"
-    - "source *"
-    - "hermes*"
-    - "systemctl*"
-    - "service *"
-    - "kill*"
-    - "pkill*"
-    - "sudo*"
-    - "su *"
-    - "chmod*"
-    - "chown*"
-    - "crontab*"
-    - "curl*"
-    - "wget*"
-    - "ssh*"
-    - "scp*"
-    - "sftp*"
-    - "ftp*"
-    - "nc *"
-    - "ncat*"
-    - "socat*"
-    - "telnet*"
-    - "dig*"
-    - "nslookup*"
-    - "ping*"
-    - "python*"
-    - "node *"
-    - "nodejs*"
-    - "perl*"
-    - "ruby*"
-    - "php*"
-    - "lua*"
-    - "bash*"
-    - "sh *"
-    - "zsh*"
-    - "dash*"
-    - "cat*"
-    - "less*"
-    - "more*"
-    - "head*"
-    - "tail*"
-    - "grep*"
-    - "egrep*"
-    - "find*"
-    - "awk*"
-    - "sed*"
-    - "xargs*"
-    - "strings*"
-    - "xxd*"
-    - "od *"
-    - "hexdump*"
-    - "tar*"
-    - "zip*"
-    - "gzip*"
-    - "cp *"
-    - "mv *"
-    - "dd *"
-    - "tee*"
-    - "openssl*"
-    - "base64*"
-    - "gpg*"
-    - "ls*"
-    - "pwd*"
-    - "whoami*"
-
-# Skips the approval prompt for these when a reply or note happens to contain a
-# dangerous-looking phrase. (See the note above: this is not what restricts the bot.)
-command_allowlist:
-  - "pokectl policy"
-  - "pokectl ticket get *"
-  - "pokectl ticket recent*"
-  - "pokectl ticket classify *"
-  - "pokectl ticket reply *"
+# Added with:
+#   hermes -p support mcp add pokectl --command /usr/local/bin/pokectl --args mcp --role support
+# Tools served: policy, ticket_get, ticket_recent, ticket_reply, ticket_classify.
+mcp_servers:
+  pokectl:
+    command: /usr/local/bin/pokectl
+    args:
+      - mcp
+      - --role
+      - support
+    enabled: true
 
 # Dispatcher settings live on the default profile (the gateway host), not here:
 #   kanban.max_in_progress: 1
