@@ -288,7 +288,7 @@ tickets marked reported, and delete them and their items from Supabase when done
 | Ship API (the build job's door) | `src/app/api/ship/[item]/route.ts`, `src/lib/ship.ts` |
 | Ship columns | `supabase/migrations/0010_ship.sql` |
 | Dispatch, messages | `ops/hermes/pokectl` (`ship_builds`, `report_ship`, `dispatch_ship`) |
-| Real, verified problems for demos | [demo-bank.md](demo-bank.md) |
+| Real, verified problems for demos | [demo-bank.md](demo-bank.md), step-by-step script in [demo-2-script.md](demo-2-script.md) |
 
 ### Credentials involved
 
