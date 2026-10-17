@@ -204,7 +204,7 @@ export async function logBacklogEvent(
 }
 
 export const ITEM_COLUMNS =
-  "id, item_number, created_at, updated_at, title, kind, status, problem, user_story, impact, confidence, ease, ease_source, ice_score, recommendation, change_summary, why, risk, effort_size, effort_why, build_cost_usd, run_cost_delta_usd_month, budget_used_pct, recommendation_reported_at, decision, decision_note, decided_at, decision_picked_up_at, followup_rounds, followup_question, followup_answer";
+  "id, item_number, created_at, updated_at, title, kind, status, problem, user_story, impact, confidence, ease, ease_source, ice_score, recommendation, change_summary, why, risk, effort_size, effort_why, build_cost_usd, run_cost_delta_usd_month, budget_used_pct, recommendation_reported_at, decision, decision_note, decided_at, decision_picked_up_at, followup_rounds, followup_question, followup_answer, ship_state, ship_note, pr_url, ship_requested_at, shipped_at, ship_reported_state";
 
 export type ItemTicket = {
   ticket_number: number;

@@ -140,6 +140,12 @@ export type BacklogItemRow = {
   followup_rounds: number;
   followup_question: string | null;
   followup_answer: string | null;
+  ship_state: "building" | "needs_review" | "merged" | "live" | "failed" | null;
+  ship_note: string | null;
+  pr_url: string | null;
+  ship_requested_at: string | null;
+  shipped_at: string | null;
+  ship_reported_state: string | null;
 };
 
 export type BacklogAssessmentRow = {
