@@ -165,7 +165,7 @@ const STEPS: Step[] = [
         name="ship-recommendation"
         narrow
         alt="A Telegram card with a recommendation to make both targets easier to tap, with the reasoning, risk, work, and cost. The decision link is blacked out."
-        caption="The decision link is blacked out. It is a one-time link, and it would work for you."
+        caption="The decision link is blacked out on purpose: anyone holding it could make the decision."
       />
     ),
   },
@@ -241,11 +241,11 @@ const SAFETY = [
 ];
 
 const WRONG = [
-  "I guessed the agents would cost about a third of what they did. My estimate was off by about 3x, so I found the cause (extra tool-loading steps) and cut the PM’s cost by about 39 percent.",
-  "I believed a locked-down shell was safe. A real test showed it wasn’t, so I removed the shell entirely.",
-  "The agent platform would not let a running bot create tasks. I could have sidestepped that rule. Instead I redesigned the hand-off so a plain script does it.",
+  "Claude and I guessed the agents would cost about a third of what they did. The estimate was off by about 3x, so we found the cause (extra tool-loading steps) and cut the PM’s cost by about 39 percent.",
+  "We assumed a locked-down shell was safe enough. A real test showed it wasn’t, so we removed the shell entirely.",
+  "The agent platform would not let a running bot create tasks. We could have sidestepped that rule. Instead we redesigned the hand-off so a plain script does it.",
   "A fresh copy of the code failed a type check that passed on my machine. The automatic checks caught it before it could break every automatic build.",
-  "One card said “make this change later,” and the change shipped immediately. The label promised a delay the system doesn’t deliver, so I changed the wording to “lower priority.”",
+  "One card said “make this change later,” and the change shipped immediately. The label promised a delay the system doesn’t deliver, so we changed the wording to “lower priority.”",
 ];
 
 const LEARNED = [
@@ -253,7 +253,7 @@ const LEARNED = [
   { title: "Verify by running it.", body: "Most real bugs only showed up in live runs: a bot that invented a feature, a duplicate loop, a step that was written but never wired in." },
   { title: "Make the work readable.", body: "If I can’t read what a bot did, I can’t trust it. The cards, the status messages, and the decision page are a bigger part of this project than the bots." },
   { title: "Humans decide, agents do the legwork.", body: "The bots recommended a change I didn’t believe in, and I said no. That tap is the product." },
-  { title: "Cost is a feature.", body: "Caps, a cost ledger, and estimates I checked against reality kept the whole thing under about five dollars of AI spend so far." },
+  { title: "Cost is a feature.", body: "Caps, a cost ledger, and estimates I checked against reality kept the whole thing to a few dollars of AI spend so far." },
   { title: "Demo-driven development works.", body: "Choosing a small, real, visible bug first made every design decision easier: if it didn’t help that demo, it waited." },
 ];
 
