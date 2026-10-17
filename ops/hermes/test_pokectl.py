@@ -71,6 +71,10 @@ check("approval says manual when shipping is off", "manual for now" in off, off)
 check("approval says building when shipping is on", "Building it now" in on and "manual" not in on, on)
 check("other decisions are unchanged by the switch", m.compose_decision_message({**item, "decision": "no", "status": "rejected"}, True).startswith("Rejected"))
 
+# --- "lower priority" must not promise a deferral the system does not deliver --------------------
+for key in ("build_now", "build_later"):
+    check(f"{key} label does not promise a later date", "later" not in m.REC_LABEL[key].lower(), m.REC_LABEL[key])
+
 # --- the switch needs both the flag and the token ---------------------------------------------
 for key in ("POKECTL_SHIP", "GITHUB_DISPATCH_TOKEN"):
     os.environ.pop(key, None)

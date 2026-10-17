@@ -134,8 +134,8 @@ def item_label(number):
 EASE_BAND_TEXT = {"S": "8 to 10", "M": "5 to 7", "L": "1 to 4"}
 KIND_LABEL = {"bug": "Bug", "usability": "Usability", "feature_request": "Feature request"}
 REC_LABEL = {
-    "build_now": "Make this change now",
-    "build_later": "Make this change later",
+    "build_now": "Make this change (high priority)",
+    "build_later": "Make this change (lower priority)",
     "investigate": "Find out more before changing anything",
     "needs_info": "Find out more before changing anything",
     "defer": "Wait for now",

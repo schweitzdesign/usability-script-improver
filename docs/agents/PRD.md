@@ -66,7 +66,7 @@ to finish its own task.
   database). The plan said RICE; ICE was chosen because Confidence is explicit, so thin evidence honestly
   lowers the rank. It tells Zach in Telegram what it is doing, then hands the item to the engineer, and
   finalizes once the engineer has answered.
-- **Outputs:** one **recommendation** per item: make a change (now or later), make no change, or find out
+- **Outputs:** one **recommendation** per item: make a change (high or lower priority), make no change, or find out
   more first, with why, cost, and a priority score.
 - **Never does:** talk to customers, design the fix, estimate the build once the engineer has, or close,
   defer, or drop an item on its own. It recommends. Zach decides.
@@ -118,7 +118,7 @@ alpha-to-beta exit criteria.
 The plan called this "the one-pager". It became a single plain card, written top-down like a news story so
 Zach can decide at a glance, with the detail folded away.
 
-1. **The recommendation:** make a change now or later, make no change, or find out more first.
+1. **The recommendation:** make a change (high or lower priority), make no change, or find out more first. Either priority builds the change as soon as Zach taps Yes; nothing is scheduled for later.
 2. **What changes for people:** one sentence beginning "Because...", naming real screens and elements. For a
    change it is the Design-Engineer's wording.
 3. **Why we recommend this, what could go wrong with this recommendation, how much work this is, and cost.**

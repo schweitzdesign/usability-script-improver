@@ -315,8 +315,9 @@ export async function lookupDecisionLink(supabase: Supabase, token: string): Pro
 }
 
 export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
-  build_now: "Make this change now",
-  build_later: "Make this change later",
+  // Both build the change as soon as Zach says yes. The difference is only the PM's priority opinion.
+  build_now: "Make this change (high priority)",
+  build_later: "Make this change (lower priority)",
   investigate: "Find out more before changing anything",
   needs_info: "Find out more before changing anything",
   defer: "Wait for now",

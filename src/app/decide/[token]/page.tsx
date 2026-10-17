@@ -198,11 +198,16 @@ function optionsFor(rec: Recommendation | null) {
       ? "Yes, leave it as it is"
       : rec === "investigate" || rec === "needs_info"
         ? "Yes, find out more first"
-        : rec === "build_later"
-          ? "Yes, make this change later"
-          : "Yes, make this change";
+        : "Yes, make this change";
   return [
-    { value: "yes" as const, label: yesLabel, hint: "Go with the recommendation." },
+    {
+      value: "yes" as const,
+      label: yesLabel,
+      hint:
+        rec === "build_now" || rec === "build_later"
+          ? "Go with the recommendation. It starts building right away. If it needs your review first, you will be told."
+          : "Go with the recommendation.",
+    },
     ...(allowsNo(rec) ? [noOption] : []),
     {
       value: "more" as const,
