@@ -675,12 +675,29 @@ def queue_pm_tickets(args):
         print(f"{label}: handed to the PM as task {task_id or '?'}")
 
 
+PM_BUSY_STATUSES = ("ready", "running", "in_progress", "todo")
+RECOMMENDATION_MAX_HOLD = timedelta(minutes=30)
+
+
+def pm_has_queued_work():
+    tasks = parse_kanban_list(hermes("kanban", "list").stdout)
+    return any(t["assignee"] == "pm" and t["status"] in PM_BUSY_STATUSES for t in tasks)
+
+
 def report_recommendations(dry_run=False):
-    """Send one decision card per newly recommended item, with a fresh one-time link."""
+    """Send one decision card per newly recommended item, with a fresh one-time link.
+
+    Cards wait while the PM still has tickets to work through, because the next ticket may
+    belong to the same item and change its report count and score. A card never waits more
+    than 30 minutes."""
     items = ok_or_fail(*call("GET", "/backlog?needs_report=1&limit=10"))["items"]
     base = os.environ.get("POKE_BASE_URL", "").rstrip("/")
+    busy = bool(items) and not dry_run and pm_has_queued_work()
     for i in items:
         n = i["item_number"]
+        if busy and datetime.now(timezone.utc) - parse_time(i["updated_at"]) < RECOMMENDATION_MAX_HOLD:
+            print(f"{item_label(n)}: holding its card until the PM finishes its queue")
+            continue
         if dry_run:
             print(compose_recommendation_card(i, f"{base}/decide/<one-time-token>") + "\n" + "-" * 40)
             continue
@@ -986,6 +1003,13 @@ SUPPORT_TOOLS = [
     },
 ]
 
+def check_next_step(text):
+    text = " ".join(str(text).split())
+    if len(text) > 200:
+        raise ToolError(f"next_step is {len(text)} characters; rewrite it as one short sentence under 160 characters")
+    return text
+
+
 def tool_backlog_list(a):
     return run_command(cmd_backlog_list, limit=int(a.get("limit") or 30), status=a.get("status"))
 
@@ -1001,13 +1025,13 @@ def tool_backlog_create(a):
         cmd_backlog_create,
         ticket=int(a["ticket"]), title=a["title"], kind=a["kind"], problem=a["problem"],
         user_story=a["user_story"], impact=int(a["impact"]), confidence=int(a["confidence"]),
-        ease=int(a["ease"]), next_step=one_line(a["next_step"], 200),
+        ease=int(a["ease"]), next_step=check_next_step(a["next_step"]),
     )
 
 
 def tool_backlog_attach(a):
     require(a, "item", "ticket", "next_step")
-    return run_command(cmd_backlog_attach, item=str(a["item"]), ticket=int(a["ticket"]), next_step=one_line(a["next_step"], 200))
+    return run_command(cmd_backlog_attach, item=str(a["item"]), ticket=int(a["ticket"]), next_step=check_next_step(a["next_step"]))
 
 
 def tool_backlog_update(a):
@@ -1036,7 +1060,7 @@ def tool_budget_get(a):
 
 ITEM_NUMBER = {"type": "integer", "description": "Backlog item number, for example 3 for B-003."}
 SCORE = {"type": "integer", "minimum": 1, "maximum": 10}
-NEXT_STEP = {"type": "string", "description": "One short sentence for Zach: what you will do next. No dashes."}
+NEXT_STEP = {"type": "string", "description": "One short sentence for Zach, under 160 characters: what you will do next. No dashes."}
 
 PM_TOOLS = [
     {
