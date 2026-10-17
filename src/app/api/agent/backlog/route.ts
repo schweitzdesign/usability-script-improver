@@ -24,6 +24,10 @@ const querySchema = z.object({
   needs_report: z.enum(["1", "0"]).optional().default("0"),
   // Decided items the PM side hasn't acted on yet (the decision pass).
   needs_pickup: z.enum(["1", "0"]).optional().default("0"),
+  // Approved changes that haven't been handed to the build job yet.
+  needs_ship: z.enum(["1", "0"]).optional().default("0"),
+  // Changes whose latest build result Zach hasn't been told about.
+  needs_ship_report: z.enum(["1", "0"]).optional().default("0"),
 });
 
 export async function GET(request: Request) {
@@ -36,6 +40,8 @@ export async function GET(request: Request) {
     limit: url.searchParams.get("limit") ?? undefined,
     needs_report: url.searchParams.get("needs_report") ?? undefined,
     needs_pickup: url.searchParams.get("needs_pickup") ?? undefined,
+    needs_ship: url.searchParams.get("needs_ship") ?? undefined,
+    needs_ship_report: url.searchParams.get("needs_ship_report") ?? undefined,
   });
   if (!parsed.success) return NextResponse.json({ error: "Invalid query." }, { status: 400 });
 
@@ -50,6 +56,12 @@ export async function GET(request: Request) {
   if (parsed.data.needs_pickup === "1") {
     query = query.not("decision", "is", null).is("decision_picked_up_at", null);
   }
+  if (parsed.data.needs_ship === "1") {
+    query = query.eq("status", "approved").eq("decision", "yes").is("ship_state", null);
+  }
+  if (parsed.data.needs_ship_report === "1") {
+    query = query.in("ship_state", ["needs_review", "failed", "live"]);
+  }
   // Best score first, so the PM sees the rank at a glance. Unscored items sort last.
   query = query.order("ice_score", { ascending: false, nullsFirst: false }).order("item_number");
 
@@ -58,7 +70,9 @@ export async function GET(request: Request) {
     console.error("[agent] list backlog failed:", error);
     return NextResponse.json({ error: "Couldn't load the backlog." }, { status: 502 });
   }
-  return NextResponse.json({ ok: true, items: await withTickets(supabase, data ?? []) });
+  let rows = data ?? [];
+  if (parsed.data.needs_ship_report === "1") rows = rows.filter((r) => r.ship_reported_state !== r.ship_state);
+  return NextResponse.json({ ok: true, items: await withTickets(supabase, rows) });
 }
 
 const createSchema = z.object({
