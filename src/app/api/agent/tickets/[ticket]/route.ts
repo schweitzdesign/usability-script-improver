@@ -85,7 +85,15 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid update." }, { status: 400 });
-  const { status, classification, severity, triage_notes, duplicate_of, reported, actor } = parsed.data;
+  const {
+    status: requestedStatus,
+    classification,
+    severity,
+    triage_notes,
+    duplicate_of,
+    reported,
+    actor,
+  } = parsed.data;
 
   const supabase = getSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
@@ -101,6 +109,19 @@ export async function PATCH(request: Request, { params }: Params) {
   }
   if (!row) return NextResponse.json({ error: "No such ticket." }, { status: 404 });
 
+  // Triage is only complete with a classification (and severity for real issues).
+  const finalClassification = classification ?? row.classification;
+  const finalSeverity = severity ?? row.severity;
+
+  // The bot sometimes records a full triage but forgets to name the final status, which
+  // would leave the ticket stuck in `queued` forever. A queued ticket that now has both a
+  // classification and a severity counts as triaged (escalated, the safe default).
+  const status =
+    requestedStatus ??
+    (row.status === "queued" && (classification || severity) && finalClassification && finalSeverity
+      ? "triaged"
+      : undefined);
+
   if (status && !canTransition(row.status, status)) {
     return NextResponse.json(
       { error: `A ${row.status} ticket can't move to ${status}.` },
@@ -108,9 +129,6 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
-  // Triage is only complete with a classification (and severity for real issues).
-  const finalClassification = classification ?? row.classification;
-  const finalSeverity = severity ?? row.severity;
   if (status === "triaged" && (!finalClassification || !finalSeverity)) {
     return NextResponse.json(
       { error: "Triaging needs both a classification and a severity." },

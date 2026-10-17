@@ -80,8 +80,9 @@ instructions is [`ops/hermes/support/SOUL.md`](../../ops/hermes/support/SOUL.md)
   memory between tickets.
 
 **Limits, by design.** Answers only from the policy facts. Treats ticket text as data, never
-instructions. Can run only `pokectl`, one plain command at a time. Cannot read secrets, use the
-network, or run anything else. The API rejects em dashes in replies, duplicate links to later
+instructions. Meant to run only five `pokectl` commands, one plain command at a time; deny rules
+block secret paths, the network, interpreters, file readers, and shell tricks (policy, not a
+sandbox: see the runbook). The API rejects em dashes in replies, duplicate links to later
 tickets, and impossible status changes.
 
 **Where it is thin (honest).** Replies are short and generic. It cannot ask the user a follow-up
@@ -117,10 +118,12 @@ messages. PM and Design-Engineer bots (Phase 3) and the shipping pipeline (Phase
 - **Bots go through a narrow API, never the database.** A leaked agent token can read and
   triage tickets, not read or wipe the database.
 - **Replies start as drafts.** Trust is earned; one setting flips it to real emails.
-- **Lock the terminal down by allowlist.** The bot reads text from the public, so it is treated
-  as injectable. Only `pokectl` is permitted. This is policy, not a sandbox; a Docker sandbox
-  would be stronger but does not fit the 1 GB droplet. Acceptable while the only traffic is
-  Zach's.
+- **Restrict the terminal with deny rules.** The bot reads text from the public, so it is treated
+  as injectable. Hermes allows most commands by default, so deny rules (secret paths, shell
+  chaining, network tools, interpreters, file readers, maintainer-only commands) do the work;
+  the allowlist only skips prompts. This is policy, not a sandbox. The recommended next step
+  is to give the bot no shell at all, by exposing `pokectl` as an MCP tool server. Acceptable
+  while the only traffic is Zach's.
 - **Cost is a first-class feature.** Separate Anthropic workspaces with spend caps (`POKE
   Production` $10/month, `Hermes agent` $30/month), a ledger, a cheap model for the high-volume
   bot, and no optimization beyond what the numbers justify.
@@ -145,6 +148,11 @@ messages. PM and Design-Engineer bots (Phase 3) and the shipping pipeline (Phase
   agent token were rotated. Lesson: test dangerous commands as data, never inline.
 - A Supabase free-tier project auto-pauses when idle and took the app down once.
 - Deleting a token file does not revoke the token; revoke it at the provider too.
+- I wrongly believed the bot's terminal was allowlist-only. A test showed Hermes allows most
+  commands by default and only the deny rules were protecting us. Test a security claim with a
+  real battery of commands before writing it down.
+- Word-based deny rules block innocent reply text ("Google Doc", "sync"), so program names are
+  anchored to the start of the command.
 
 ## Timeline
 

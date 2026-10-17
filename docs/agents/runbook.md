@@ -115,16 +115,29 @@ hermes -p support insights     # support bot token usage
 The support bot reads text from members of the public, so it is treated as exposed to prompt
 injection. Layers, all verified with `hermes -p support approvals test` (nothing executes):
 
-- Terminal approvals are `manual`, so anything not allowlisted is refused when no human answers.
-- Only `pokectl *` is allowlisted. Deny rules block secret paths, network tools, scripting
-  languages, and shell chaining or substitution (`; | && $ ` > <` and newlines).
+- **Hermes allows most commands by default.** `curl`, `cat`, `ssh` and the like run without a
+  prompt unless a deny rule or a "dangerous pattern" stops them. The allowlist only skips the
+  prompt for commands that look dangerous; it does not forbid everything else. (This was
+  misunderstood at first and corrected on 2026-10-17 after a test showed `curl` and
+  `pokectl sync` were allowed.) So the deny rules do the real work.
+- Deny rules block: secret paths, shell chaining, substitution and redirection (`; | && $ ` > <`
+  and newlines), the maintainer-only `pokectl` commands (`sync`, `report`, `usage-sync`,
+  `ticket story`), and common programs (network tools, interpreters, shells, file readers,
+  `hermes`). Program names are anchored at the start of the command so ordinary reply text
+  like "copy it out of your Google Doc" is not blocked.
+- `pokectl ticket reply` takes `--body` only. A "read the reply from a file" option was removed
+  because it would let a reply carry the contents of any file.
 - The API refuses replies with em or en dashes, duplicate links to later tickets, and invalid
   status changes. Customer email addresses are never returned to the bot.
 - The agent token only reaches the narrow `/api/agent/*` routes, never the database.
 
-Residual risk, stated plainly: deny rules are policy, not a sandbox. Real containment would be
-Docker as the terminal backend, which is too heavy for this 1 GB droplet. Acceptable while the
-only traffic is the maintainer's; revisit before real users reach the bot.
+Residual risk, stated plainly: deny rules are policy, not a sandbox. A shell glob such as
+`/r?ot` can dodge a path match, and a blocklist of programs can never be complete. Two stronger
+options: Docker as the terminal backend (too heavy for this 1 GB droplet), or, better, give the
+bot **no shell at all** by exposing `pokectl` as an MCP tool server with exactly five tools and
+disabling the terminal toolset. That is the recommended next hardening step; it also shrinks
+the bot's prompt. Acceptable as is while the only traffic is the maintainer's; do it before
+real users can reach the bot.
 
 ### Cost (measured)
 

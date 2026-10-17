@@ -6,10 +6,10 @@
 # key lives in its own .env on the droplet and is never committed).
 #
 # Safety model, verified with `hermes -p support approvals test -- <command>`
-# (nothing executes): manual mode means anything not allowlisted is refused when
-# no human answers; only specific `pokectl` commands are allowlisted; deny rules are fnmatch globs
-# that block secret paths, network tools, scripting languages, and shell chaining
-# or substitution. These are policy, not a sandbox. See docs/agents/runbook.md.
+# (nothing executes). Hermes allows most commands by default, so the deny rules below
+# do the real work: they block secret paths, shell chaining and substitution, network
+# tools, interpreters, file readers, and the maintainer-only pokectl commands. These are
+# policy, not a sandbox. See docs/agents/runbook.md.
 
 model:
   provider: anthropic
@@ -25,38 +25,23 @@ approvals:
   cron_mode: deny
   single_query_mode: deny
   unattended_mode: deny
+  # IMPORTANT: Hermes allows most commands by default. The allowlist below only skips the
+  # prompt for commands that LOOK dangerous; it does NOT forbid everything else. These deny
+  # rules are what actually restrict the bot, and they are policy, not a sandbox (a shell
+  # glob like /r?ot can dodge a path match). The stronger fix is to give the bot no shell:
+  # expose pokectl as an MCP tool server and disable the terminal toolset.
   deny:
+    # Paths a command must never name
     - "*.env*"
     - "*pokectl*env*"
     - "*.hermes*"
     - "*/etc/*"
     - "*/root*"
-    - "*~*"
-    - "*$*"
     - "*/proc/*"
     - "*/var/lib*"
-    - "*hermes *"
-    - "*sudo*"
-    - "*chmod*"
-    - "*chown*"
-    - "*printenv*"
-    - "env"
-    - "env *"
-    - "*secret*"
-    - "*credential*"
-    - "*google*"
-    - "*curl*"
-    - "*wget*"
-    - "*ssh*"
-    - "*scp*"
-    - "*ncat*"
-    - "*nc *"
-    - "*socat*"
-    - "*python*"
-    - "*node *"
-    - "*perl*"
-    - "*ruby*"
-    - "*base64*"
+    - "*/var/log*"
+    # Shell metacharacters: no chaining, substitution, or redirection inside an allowed command
+    - "*$*"
     - "*`*"
     - "*&&*"
     - "*||*"
@@ -65,9 +50,83 @@ approvals:
     - "*>*"
     - "*<*"
     - "*\n*"
+    # pokectl commands that are for the maintainer, not the bot (they can read the customer email or post to Telegram)
+    - "pokectl sync*"
+    - "pokectl report*"
+    - "pokectl usage-sync*"
+    - "pokectl ticket story*"
+    # Programs, anchored at the start so ordinary reply text can't trip them
+    - "env"
+    - "env *"
+    - "printenv*"
+    - "export*"
+    - "set *"
+    - "source *"
+    - "hermes*"
+    - "systemctl*"
+    - "service *"
+    - "kill*"
+    - "pkill*"
+    - "sudo*"
+    - "su *"
+    - "chmod*"
+    - "chown*"
+    - "crontab*"
+    - "curl*"
+    - "wget*"
+    - "ssh*"
+    - "scp*"
+    - "sftp*"
+    - "ftp*"
+    - "nc *"
+    - "ncat*"
+    - "socat*"
+    - "telnet*"
+    - "dig*"
+    - "nslookup*"
+    - "ping*"
+    - "python*"
+    - "node *"
+    - "nodejs*"
+    - "perl*"
+    - "ruby*"
+    - "php*"
+    - "lua*"
+    - "bash*"
+    - "sh *"
+    - "zsh*"
+    - "dash*"
+    - "cat*"
+    - "less*"
+    - "more*"
+    - "head*"
+    - "tail*"
+    - "grep*"
+    - "egrep*"
+    - "find*"
+    - "awk*"
+    - "sed*"
+    - "xargs*"
+    - "strings*"
+    - "xxd*"
+    - "od *"
+    - "hexdump*"
+    - "tar*"
+    - "zip*"
+    - "gzip*"
+    - "cp *"
+    - "mv *"
+    - "dd *"
+    - "tee*"
+    - "openssl*"
+    - "base64*"
+    - "gpg*"
+    - "ls*"
+    - "pwd*"
+    - "whoami*"
 
-# Only the commands the bot needs. It cannot run `pokectl sync`, `report`, or
-# `ticket story`, which can read the customer's email address or post to Telegram.
+# Skips the approval prompt for these when a reply or note happens to contain a
+# dangerous-looking phrase. (See the note above: this is not what restricts the bot.)
 command_allowlist:
   - "pokectl policy"
   - "pokectl ticket get *"

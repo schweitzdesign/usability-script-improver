@@ -297,7 +297,8 @@ def cmd_ticket_classify(args):
 
 
 def cmd_ticket_reply(args):
-    text = sys.stdin.read() if args.body_file == "-" else (Path(args.body_file).read_text() if args.body_file else args.body)
+    # --body only: a "read the reply from a file" option would let a reply carry the contents of any file.
+    text = args.body
     if not text or not text.strip():
         fail("reply body is empty")
     payload = ok_or_fail(*call("POST", f"/tickets/{args.number}/reply", {"body": text, "actor": args.actor}))
@@ -580,8 +581,7 @@ def main():
 
     reply = ticket.add_parser("reply", help="record or send a reply to the user")
     reply.add_argument("number")
-    reply.add_argument("--body")
-    reply.add_argument("--body-file", help="path, or - for stdin")
+    reply.add_argument("--body", required=True)
     reply.add_argument("--actor", default="support-bot")
     reply.set_defaults(fn=cmd_ticket_reply)
 
@@ -605,8 +605,6 @@ def main():
     usage.set_defaults(fn=cmd_usage_sync)
 
     args = parser.parse_args()
-    if args.command == "ticket" and args.action == "reply" and not (args.body or args.body_file):
-        fail("give --body or --body-file")
     if args.command == "ticket" and args.action == "story" and not (args.number or args.since or args.all):
         fail("give a ticket number, or --since 2h, or --all")
     args.fn(args)
