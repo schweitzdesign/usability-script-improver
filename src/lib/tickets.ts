@@ -14,6 +14,8 @@ export const CLASSIFICATIONS = [
   "question",
   "not_actionable",
 ] as const;
+/** Classifications the PM looks at. The rest are answered or dropped by Support. */
+export const PM_CLASSIFICATIONS = ["bug", "usability", "feature_request"] as const;
 export const SEVERITIES = ["low", "medium", "high", "critical"] as const;
 
 export type TicketStatus = (typeof TICKET_STATUSES)[number];
@@ -59,7 +61,7 @@ export async function logTicketEvent(
  * story commands do; the Support bot's own commands never ask for it.
  */
 export const AGENT_TICKET_COLUMNS =
-  "id, ticket_number, created_at, kind, message, email, page_url, user_agent, viewport, app_mode, status, classification, severity, triage_notes, duplicate_of, reply_draft, reply_sent_at, queued_at, reported_at";
+  "id, ticket_number, created_at, kind, message, email, page_url, user_agent, viewport, app_mode, status, classification, severity, triage_notes, duplicate_of, reply_draft, reply_sent_at, queued_at, reported_at, pm_queued_at";
 
 export function toAgentTicket(
   row: {

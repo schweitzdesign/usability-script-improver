@@ -1,0 +1,31 @@
+# Reference copy of what we change on the Hermes `pm` profile, on top of a blank profile created with:
+#   hermes profile create pm --no-skills --no-alias --description "..."
+# The real file lives at /root/.hermes/profiles/pm/config.yaml on the droplet. This copy is for
+# history and review; it contains no secrets (the profile's API key lives in its own .env on the
+# droplet and is never committed).
+#
+# Same safety model as Support: NO SHELL. The terminal toolset is disabled, so the only things
+# this bot can do are the pokectl tools below and the kanban board tools.
+
+model:
+  provider: anthropic
+  default: claude-sonnet-5
+
+# Built-in toolsets enabled for this profile: kanban only (to finish its own task).
+# Set with `hermes -p pm tools disable terminal` after enabling kanban.
+platform_toolsets:
+  cli:
+    - kanban
+
+# Added with:
+#   hermes -p pm mcp add pokectl --command /usr/local/bin/pokectl --args mcp --role pm
+# Tools served: ticket_get, backlog_list, backlog_get, backlog_create, backlog_attach,
+# backlog_update, budget_get, submit_recommendation.
+mcp_servers:
+  pokectl:
+    command: /usr/local/bin/pokectl
+    args:
+      - mcp
+      - --role
+      - pm
+    enabled: true

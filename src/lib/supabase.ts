@@ -49,6 +49,7 @@ type TriageColumns = {
   reply_sent_at: string | null;
   queued_at: string | null;
   reported_at: string | null;
+  pm_queued_at: string | null;
 };
 
 export type FeedbackRow = {
@@ -98,9 +99,101 @@ export type UsageEventRow = {
 type UsageEventInsert = Omit<UsageEventRow, "id" | "created_at" | "feedback_id"> &
   Partial<Pick<UsageEventRow, "feedback_id">>;
 
+export type BacklogItemRow = {
+  id: string;
+  item_number: number;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  kind: "bug" | "usability" | "feature_request";
+  status:
+    | "new"
+    | "assessing"
+    | "recommended"
+    | "approved"
+    | "rejected"
+    | "deferred"
+    | "needs_info"
+    | "shipped";
+  problem: string | null;
+  user_story: string | null;
+  impact: number | null;
+  confidence: number | null;
+  ease: number | null;
+  ease_source: "pm_guess" | "engineering";
+  /** Computed by the database: impact x confidence x ease / 100. */
+  ice_score: number | null;
+  recommendation: "build_now" | "build_later" | "investigate" | "defer" | "drop" | "needs_info" | null;
+  change_summary: string | null;
+  why: string | null;
+  risk: string | null;
+  effort_size: "S" | "M" | "L" | null;
+  effort_why: string | null;
+  build_cost_usd: number | null;
+  run_cost_delta_usd_month: number | null;
+  budget_used_pct: number | null;
+  recommendation_reported_at: string | null;
+  decision: "yes" | "no" | "more" | null;
+  decision_note: string | null;
+  decided_at: string | null;
+  decision_picked_up_at: string | null;
+};
+
+type BacklogItemInsert = Pick<BacklogItemRow, "title" | "kind"> &
+  Partial<Omit<BacklogItemRow, "id" | "item_number" | "created_at" | "ice_score" | "title" | "kind">>;
+
+export type BacklogItemTicketRow = {
+  item_id: string;
+  feedback_id: string;
+  added_at: string;
+};
+
+export type BacklogEventRow = {
+  id: string;
+  item_id: string;
+  created_at: string;
+  actor: string;
+  action: string;
+  detail: Json | null;
+};
+
+export type DecisionLinkRow = {
+  id: string;
+  item_id: string;
+  token_hash: string;
+  created_at: string;
+  expires_at: string;
+  used_at: string | null;
+  choice: "yes" | "no" | "more" | null;
+};
+
 type Database = {
   public: {
     Tables: {
+      backlog_items: {
+        Row: BacklogItemRow;
+        Insert: BacklogItemInsert;
+        Update: Partial<Omit<BacklogItemRow, "id" | "item_number" | "created_at" | "ice_score">>;
+        Relationships: [];
+      };
+      backlog_item_tickets: {
+        Row: BacklogItemTicketRow;
+        Insert: Pick<BacklogItemTicketRow, "item_id" | "feedback_id">;
+        Update: Partial<BacklogItemTicketRow>;
+        Relationships: [];
+      };
+      backlog_events: {
+        Row: BacklogEventRow;
+        Insert: Omit<BacklogEventRow, "id" | "created_at">;
+        Update: Partial<Omit<BacklogEventRow, "id" | "created_at">>;
+        Relationships: [];
+      };
+      decision_links: {
+        Row: DecisionLinkRow;
+        Insert: Pick<DecisionLinkRow, "item_id" | "token_hash" | "expires_at">;
+        Update: Partial<Omit<DecisionLinkRow, "id" | "created_at">>;
+        Relationships: [];
+      };
       submissions: {
         Row: SubmissionRow;
         Insert: SubmissionInsert;

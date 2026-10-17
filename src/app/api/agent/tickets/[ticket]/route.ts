@@ -26,6 +26,9 @@ const patchSchema = z.object({
   duplicate_of: z.coerce.number().int().positive().optional(),
   // Set by the report pass once a finished ticket's card has gone to Telegram.
   reported: z.literal(true).optional(),
+  // true: the sync hands a triaged ticket to the PM, exactly once. false: releases that
+  // claim when the PM's task couldn't be created.
+  pm_queued: z.boolean().optional(),
   actor: z.string().trim().min(1).max(40).optional().default("support-bot"),
 });
 
@@ -92,6 +95,7 @@ export async function PATCH(request: Request, { params }: Params) {
     triage_notes,
     duplicate_of,
     reported,
+    pm_queued,
     actor,
   } = parsed.data;
 
@@ -146,6 +150,10 @@ export async function PATCH(request: Request, { params }: Params) {
     );
   }
 
+  if (pm_queued !== undefined && row.status !== "triaged") {
+    return NextResponse.json({ error: "Only a triaged ticket can go to the PM." }, { status: 409 });
+  }
+
   let duplicateId: string | undefined;
   if (duplicate_of !== undefined) {
     if (duplicate_of === row.ticket_number) {
@@ -175,6 +183,8 @@ export async function PATCH(request: Request, { params }: Params) {
     ...(triage_notes ? { triage_notes } : {}),
     ...(duplicateId ? { duplicate_of: duplicateId } : {}),
     ...(reported ? { reported_at: new Date().toISOString() } : {}),
+    ...(pm_queued === true ? { pm_queued_at: new Date().toISOString() } : {}),
+    ...(pm_queued === false ? { pm_queued_at: null } : {}),
     ...(status === "queued" && row.status !== "queued" ? { queued_at: new Date().toISOString() } : {}),
   };
   if (Object.keys(changes).length === 0) {
@@ -183,12 +193,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
   // Conditional on the status we just read, so two agents racing to claim the
   // same ticket can't both win: the loser updates zero rows and gets a 409.
-  const { data: updated, error: updateError } = await supabase
-    .from("feedback")
-    .update(changes)
-    .eq("id", row.id)
-    .eq("status", row.status)
-    .select("ticket_number");
+  let update = supabase.from("feedback").update(changes).eq("id", row.id).eq("status", row.status);
+  // Handing a ticket to the PM is also a claim: only one sync can win it.
+  if (pm_queued === true) update = update.is("pm_queued_at", null);
+  const { data: updated, error: updateError } = await update.select("ticket_number");
   if (updateError) {
     console.error("[agent] update ticket failed:", updateError);
     return NextResponse.json({ error: "Couldn't update that ticket." }, { status: 502 });
@@ -197,8 +205,16 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "That ticket just changed. Reload and retry." }, { status: 409 });
   }
 
-  const onlyReported = reported && Object.keys(changes).length === 1;
-  await logTicketEvent(supabase, row.id, actor, onlyReported ? "reported" : "update", {
+  const onlyMarker = Object.keys(changes).length === 1;
+  const action =
+    onlyMarker && reported
+      ? "reported"
+      : onlyMarker && pm_queued === true
+        ? "handed_to_pm"
+        : onlyMarker && pm_queued === false
+          ? "pm_handoff_released"
+          : "update";
+  await logTicketEvent(supabase, row.id, actor, action, {
     from_status: row.status,
     ...changes,
     ...(duplicate_of !== undefined ? { duplicate_of_ticket: duplicate_of } : {}),
