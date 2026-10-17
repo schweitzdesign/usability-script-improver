@@ -5,24 +5,48 @@ Standard library only, so it runs on the droplet with no installs. Config comes
 from /etc/pokectl.env (override with POKECTL_ENV): POKE_BASE_URL, AGENT_API_TOKEN,
 and optionally TELEGRAM_CHAT_ID.
 
-Agents call: policy, ticket get|classify|reply.
-A systemd timer calls: sync (zero model tokens) and usage-sync.
+Agents (the Support bot) call only: policy, ticket get|recent|classify|reply.
+A systemd timer calls: sync (which also sends finished-ticket cards and stuck-task
+alerts to Telegram, all with zero model tokens) and usage-sync.
+The maintainer calls: report, ticket story.
 """
 
 import argparse
 import glob
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+try:
+    from zoneinfo import ZoneInfo
+
+    EASTERN = ZoneInfo("America/New_York")
+except Exception:  # no tz database: fall back to a fixed offset (EDT)
+    EASTERN = timezone(timedelta(hours=-4))
 
 CONFIG_FILE = os.environ.get("POKECTL_ENV", "/etc/pokectl.env")
 STATE_DIR = Path(os.environ.get("POKECTL_STATE", "/var/lib/pokectl"))
+LOG_DIR = Path(os.environ.get("POKECTL_LOG_DIR", "/var/log/pokectl"))
 BOT_PROFILES = {"support": "support-bot", "pm": "pm-bot", "eng": "eng-bot"}
+TELEGRAM_LIMIT = 3900  # Telegram caps a message at 4096 characters
+REPORT_HOLD_SECONDS = 60  # let the bot finish writing before a ticket is reported
+
+TYPE_LABEL = {
+    "bug": "Bug",
+    "usability": "Usability",
+    "feature_request": "Feature request",
+    "user_error": "User error",
+    "question": "Question",
+    "not_actionable": "Not actionable",
+}
 
 
 def load_config():
@@ -85,6 +109,122 @@ def ticket_label(number):
     return f"POKE-{int(number):04d}"
 
 
+# ---------------------------------------------------------------- the ticket card
+
+
+def parse_time(iso):
+    # Postgres can return 1 to 6 fractional digits; older Pythons only accept 3 or 6.
+    text = str(iso).replace("Z", "+00:00")
+    text = re.sub(r"\.(\d+)(?=[+-]\d\d:\d\d$|$)", lambda m: "." + (m.group(1) + "000000")[:6], text)
+    return datetime.fromisoformat(text)
+
+
+def format_et(iso):
+    """2026-10-17T15:23:00+00:00 -> '2026.10.17 11:23am ET'."""
+    dt = parse_time(iso).astimezone(EASTERN)
+    hour = dt.hour % 12 or 12
+    return f"{dt:%Y.%m.%d} {hour}:{dt:%M}{'am' if dt.hour < 12 else 'pm'} ET"
+
+
+def split_faq_proposal(notes):
+    """Triage notes may end with 'FAQ proposal: ...'. Returns (notes_without_it, proposal_or_None)."""
+    notes = (notes or "").strip()
+    match = re.search(r"\bFAQ proposal:\s*(.*)$", notes, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        return notes, None
+    proposal = match.group(1).strip()
+    rest = notes[: match.start()].strip()
+    return rest, (None if proposal.lower() in ("", "none", "n/a") else proposal)
+
+
+def delivery_tag(t):
+    if not t.get("reply_draft"):
+        return "no reply sent"
+    if not t.get("email"):
+        return "not emailed, no address"
+    return "emailed" if t.get("reply_sent_at") else "draft only"
+
+
+def compose_card(t):
+    """The finished-ticket card Zach reads in Telegram. Deterministic: no model involved."""
+    kind = TYPE_LABEL.get(t.get("classification") or "", "Unclassified")
+    priority = (t.get("severity") or "-").capitalize()
+    notes, proposal = split_faq_proposal(t.get("triage_notes"))
+
+    lines = [
+        f"Ticket id: {ticket_label(t['ticket_number'])}",
+        f"Type: {kind}, Priority: {priority}",
+        "",
+        format_et(t["created_at"]),
+    ]
+    if t.get("email"):
+        lines.append(t["email"])
+    lines.append(f'"{t["message"].strip()}"')
+    lines += ["", f"Support Bot ({delivery_tag(t)}):"]
+    lines.append(f'"{t["reply_draft"].strip()}"' if t.get("reply_draft") else "(the bot chose not to reply)")
+    lines += ["", "Triage:"]
+    if t.get("duplicate_of_ticket"):
+        lines.append(f"Duplicate of {ticket_label(t['duplicate_of_ticket'])}.")
+    lines.append(notes or "(no notes)")
+    lines.append(f"FAQ proposal: {proposal or 'none'}")
+    return "\n".join(lines)
+
+
+def split_for_telegram(text, limit=TELEGRAM_LIMIT):
+    """Split at blank lines (hard-splitting only if one paragraph is itself too long)."""
+    if len(text) <= limit:
+        return [text]
+    parts, current = [], ""
+    for paragraph in text.split("\n\n"):
+        while len(paragraph) > limit:
+            if current:
+                parts.append(current)
+                current = ""
+            parts.append(paragraph[:limit])
+            paragraph = paragraph[limit:]
+        candidate = f"{current}\n\n{paragraph}" if current else paragraph
+        if len(candidate) > limit:
+            parts.append(current)
+            current = paragraph
+        else:
+            current = candidate
+    if current:
+        parts.append(current)
+    return parts
+
+
+def send_telegram(text):
+    """Send plain text to Zach's Telegram through Hermes (no model involved)."""
+    result = subprocess.run(
+        ["hermes", "send", "-t", "telegram", "-f", "-"],
+        input=text, capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        print(f"telegram send failed: {one_line(result.stderr or result.stdout, 200)}", file=sys.stderr)
+    return result.returncode == 0
+
+
+def load_state(name):
+    try:
+        return json.loads((STATE_DIR / name).read_text())
+    except Exception:
+        return {}
+
+
+def save_state(name, data):
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    (STATE_DIR / name).write_text(json.dumps(data))
+
+
+def append_card_log(card):
+    try:
+        LOG_DIR.mkdir(parents=True, exist_ok=True)
+        with open(LOG_DIR / "cards.log", "a") as log:
+            log.write(card + "\n\n" + "=" * 60 + "\n\n")
+    except Exception as error:  # a log write must never block reporting
+        print(f"could not write cards.log: {error}", file=sys.stderr)
+
+
 # ---------------------------------------------------------------- agent commands
 
 
@@ -96,6 +236,16 @@ def cmd_policy(_args):
     print(f"- First update on a bug: within {sla['bugFirstUpdate']}")
     print(f"- First update on anything else: within {sla['otherFirstUpdate']}")
     print("\nTONE\n" + payload["tone"])
+    reply = payload.get("reply")
+    if reply:
+        print("\nREPLY SHAPE (added for you, never write these yourself)")
+        print(f"- Opening line: {reply['greeting']}")
+        print(f"- Closing line: {reply['closing']}")
+        print(f"- Your body: one or two sentences, under {reply['maxBodyChars']} characters")
+    if payload.get("examples"):
+        print("\nEXAMPLES (good is the target, bad is what to avoid)")
+        for ex in payload["examples"]:
+            print(f"- {ex['situation']}\n  good: {ex['good']}\n  bad:  {ex['bad']}")
     print("\nFAQ (facts you may rely on)")
     for item in payload["faq"]:
         print(f"- Q: {item['q']}\n  A: {item['a']}")
@@ -174,13 +324,12 @@ def parse_task_id(stdout):
     return None
 
 
-def cmd_sync(args):
+def queue_new_tickets(args):
     payload = ok_or_fail(*call("GET", f"/tickets?status=new&limit={args.limit}"))
     tickets = payload["tickets"]
     if not tickets:
         print("nothing new")
         return
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
 
     for t in tickets:
         n = t["ticket_number"]
@@ -215,14 +364,140 @@ def cmd_sync(args):
             print(f"{label}: could not create task, released claim: {one_line(result.stderr or result.stdout, 200)}", file=sys.stderr)
             continue
 
-        task_id = parse_task_id(result.stdout)
-        if task_id and chat_id:
-            hermes(
-                "kanban", "notify-subscribe", task_id,
-                "--platform", "telegram", "--chat-id", chat_id, "--delivery-mode", "notify",
-            )
-        hermes("send", "-t", "telegram", f"[Support] New ticket {label} ({t['kind']}): {one_line(t['message'], 80)}")
-        print(f"{label}: queued as task {task_id or '?'}")
+        # No Telegram message on arrival: Zach gets one readable card when the bot finishes.
+        print(f"{label}: queued as task {parse_task_id(result.stdout) or '?'}")
+
+
+def report_finished(dry_run=False):
+    """Send one card per finished ticket, exactly once, then mark it reported."""
+    payload = ok_or_fail(*call("GET", "/tickets?needs_report=1&limit=20"))
+    pending = payload["tickets"]
+    now = time.time()
+    seen = load_state("report-seen.json")
+    still_seen = {}
+
+    for t in pending:
+        n = t["ticket_number"]
+        key = str(n)
+        first_seen = seen.get(key, now)
+        still_seen[key] = first_seen
+        # The bot writes its reply and its triage in separate steps; waiting for the next pass
+        # means the card is never sent half-finished.
+        if not dry_run and now - first_seen < REPORT_HOLD_SECONDS:
+            continue
+
+        detail = ok_or_fail(*call("GET", f"/tickets/{n}?include_email=1"))
+        card = compose_card(detail["ticket"])
+        if dry_run:
+            print(card + "\n" + "-" * 40)
+            continue
+
+        if all(send_telegram(part) for part in split_for_telegram(card)):
+            append_card_log(card)
+            ok_or_fail(*call("PATCH", f"/tickets/{n}", {"reported": True, "actor": "report"}))
+            still_seen.pop(key, None)
+            print(f"{ticket_label(n)}: card sent")
+
+    if not dry_run:
+        save_state("report-seen.json", still_seen)
+    if not pending:
+        print("no finished tickets waiting for a card")
+
+
+TASK_ROW = re.compile(r"^\S+\s+(t_[0-9a-f]+)\s+(\w+)\s+(\S+)\s+(.*)$")
+
+
+def parse_kanban_list(text):
+    """Rows look like: '✓ t_e9e5ae92  done  support  POKE-0001 [bug] There was...'."""
+    tasks = []
+    for line in text.splitlines():
+        match = TASK_ROW.match(line.strip())
+        if match:
+            tasks.append({"id": match.group(1), "status": match.group(2), "assignee": match.group(3), "title": match.group(4)})
+    return tasks
+
+
+def block_reason(task_id):
+    shown = hermes("kanban", "show", task_id).stdout
+    match = re.search(r"'reason':\s*'(.*?)'\s*[,}]", shown, flags=re.DOTALL)
+    return one_line(match.group(1), 300) if match else f"see: hermes kanban show {task_id}"
+
+
+def alert_blocked(dry_run=False):
+    """Tell Zach, once per task, when the Support bot is stuck, and how to fix it."""
+    tasks = parse_kanban_list(hermes("kanban", "list").stdout)
+    blocked = {t["id"]: t for t in tasks if t["status"] == "blocked" and t["assignee"] == "support"}
+    alerted = load_state("alerted.json")
+
+    for task_id, task in blocked.items():
+        if task_id in alerted:
+            continue
+        label = (re.match(r"(POKE-\d+)", task["title"]) or [None, "a ticket"])[1]
+        message = (
+            f"Support bot is stuck on {label}.\n"
+            f"Why: {block_reason(task_id)}\n"
+            f"Fix the cause, then run: hermes kanban unblock {task_id}"
+        )
+        if dry_run:
+            print(message + "\n" + "-" * 40)
+        elif send_telegram(message):
+            alerted[task_id] = time.time()
+            print(f"alerted: {label} blocked")
+
+    if not dry_run:
+        # Forget tasks that are no longer blocked, so a future block alerts again.
+        save_state("alerted.json", {k: v for k, v in alerted.items() if k in blocked})
+
+
+def cmd_sync(args):
+    queue_new_tickets(args)
+    report_finished(args.dry_run)
+    alert_blocked(args.dry_run)
+
+
+def cmd_report(args):
+    report_finished(args.dry_run)
+
+
+def parse_duration(text):
+    match = re.fullmatch(r"(\d+)([mhd])", text.strip())
+    if not match:
+        fail("--since takes a number and m, h, or d, for example 30m, 2h, 1d")
+    amount, unit = int(match.group(1)), match.group(2)
+    return timedelta(**{{"m": "minutes", "h": "hours", "d": "days"}[unit]: amount})
+
+
+def story_text(ticket, events):
+    parts = [compose_card(ticket), ""]
+    parts.append(
+        f"Status: {ticket['status']} | Page: {ticket.get('page_url') or '-'} | "
+        f"Viewport: {ticket.get('viewport') or '-'} | Mode: {ticket['app_mode']}"
+    )
+    parts.append(f"Browser: {one_line(ticket.get('user_agent') or '-', 120)}")
+    if events:
+        parts.append("Timeline:")
+        for e in events:
+            parts.append(f"- {format_et(e['created_at'])}  {e['actor']}  {e['action']}")
+    return "\n".join(parts)
+
+
+def cmd_ticket_story(args):
+    """The whole narrative of one ticket, or of many: user words, reply, triage, timeline."""
+    if args.number and not (args.since or args.all):
+        payload = ok_or_fail(*call("GET", f"/tickets/{args.number}?include_email=1"))
+        print(story_text(payload["ticket"], payload["events"]))
+        return
+
+    listing = ok_or_fail(*call("GET", "/tickets?limit=50&order=desc"))["tickets"]
+    if args.since:
+        cutoff = datetime.now(timezone.utc) - parse_duration(args.since)
+        listing = [t for t in listing if parse_time(t["created_at"]) >= cutoff]
+    if not listing:
+        print("no tickets in that window")
+    for t in sorted(listing, key=lambda x: x["ticket_number"]):
+        detail = ok_or_fail(*call("GET", f"/tickets/{t['ticket_number']}?include_email=1"))
+        print(story_text(detail["ticket"], detail["events"]))
+        print("\n" + "=" * 60 + "\n")
 
 
 def usage_sources():
@@ -310,10 +585,20 @@ def main():
     reply.add_argument("--actor", default="support-bot")
     reply.set_defaults(fn=cmd_ticket_reply)
 
-    sync = sub.add_parser("sync", help="turn new tickets into tasks (no model tokens)")
+    story = ticket.add_parser("story", help="the full story of a ticket: user words, reply, triage, timeline")
+    story.add_argument("number", nargs="?")
+    story.add_argument("--since", help="tickets created in the last N minutes, hours, or days, like 2h")
+    story.add_argument("--all", action="store_true", help="the 50 newest tickets")
+    story.set_defaults(fn=cmd_ticket_story)
+
+    sync = sub.add_parser("sync", help="queue new tickets, send finished-ticket cards, alert on stuck tasks")
     sync.add_argument("--dry-run", action="store_true")
     sync.add_argument("--limit", type=int, default=10)
     sync.set_defaults(fn=cmd_sync)
+
+    report = sub.add_parser("report", help="send cards for finished tickets that haven't had one")
+    report.add_argument("--dry-run", action="store_true", help="print the cards instead of sending")
+    report.set_defaults(fn=cmd_report)
 
     usage = sub.add_parser("usage-sync", help="report bot token usage to POKE")
     usage.add_argument("--dry-run", action="store_true")
@@ -322,6 +607,8 @@ def main():
     args = parser.parse_args()
     if args.command == "ticket" and args.action == "reply" and not (args.body or args.body_file):
         fail("give --body or --body-file")
+    if args.command == "ticket" and args.action == "story" and not (args.number or args.since or args.all):
+        fail("give a ticket number, or --since 2h, or --all")
     args.fn(args)
 
 

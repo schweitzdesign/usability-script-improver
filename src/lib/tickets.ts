@@ -4,6 +4,8 @@ import type { getSupabaseServerClient, Json } from "@/lib/supabase";
 type Supabase = NonNullable<ReturnType<typeof getSupabaseServerClient>>;
 
 export const TICKET_STATUSES = ["new", "queued", "triaged", "resolved_by_support"] as const;
+/** Statuses where the Support bot is done and the ticket's card can be reported. */
+export const FINISHED_STATUSES = ["triaged", "resolved_by_support"] as const;
 export const CLASSIFICATIONS = [
   "bug",
   "usability",
@@ -51,14 +53,21 @@ export async function logTicketEvent(
   if (error) console.error("[tickets] audit insert failed:", error.message);
 }
 
-/** What agents are allowed to see. The customer's email address is deliberately left out. */
+/**
+ * What agents are allowed to see. The customer's email address is left out unless
+ * the caller opts in with includeEmail, which only the maintainer's report and
+ * story commands do; the Support bot's own commands never ask for it.
+ */
 export const AGENT_TICKET_COLUMNS =
-  "id, ticket_number, created_at, kind, message, email, page_url, user_agent, viewport, app_mode, status, classification, severity, triage_notes, duplicate_of, reply_draft, reply_sent_at, queued_at";
+  "id, ticket_number, created_at, kind, message, email, page_url, user_agent, viewport, app_mode, status, classification, severity, triage_notes, duplicate_of, reply_draft, reply_sent_at, queued_at, reported_at";
 
-export function toAgentTicket(row: {
-  email: string | null;
-  [key: string]: unknown;
-}) {
+export function toAgentTicket(
+  row: {
+    email: string | null;
+    [key: string]: unknown;
+  },
+  includeEmail = false
+) {
   const { email, ...rest } = row;
-  return { ...rest, has_email: Boolean(email) };
+  return { ...rest, has_email: Boolean(email), ...(includeEmail ? { email } : {}) };
 }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getReplyMode, requireAgent } from "@/lib/agent-auth";
 import { sendSupportReply } from "@/lib/email";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { composeSupportReply, validateReplyBody } from "@/lib/support-policy";
 import { logTicketEvent, parseTicketNumber } from "@/lib/tickets";
 
 export const runtime = "nodejs";
@@ -25,15 +26,14 @@ export async function POST(request: Request, { params }: Params) {
   if (!parsed.success) return NextResponse.json({ error: "Invalid reply." }, { status: 400 });
   const { body, actor } = parsed.data;
 
-  // House rule, enforced here because the model doesn't reliably follow it from
-  // instructions alone: no em or en dashes in anything a customer reads. The
-  // error text goes back to the bot, which rewrites and retries.
-  if (/[–—]/.test(body)) {
-    return NextResponse.json(
-      { error: "Replies can't contain em dashes or en dashes. Rewrite using commas, periods, or colons, then try again." },
-      { status: 400 }
-    );
-  }
+  // The reply rules (no em or en dashes, short, no greeting or closing of its own)
+  // are enforced here because the model doesn't reliably follow them from
+  // instructions alone. The error text goes back to the bot, which rewrites and retries.
+  const problem = validateReplyBody(body);
+  if (problem) return NextResponse.json({ error: problem }, { status: 400 });
+
+  // The greeting and closing are added by code so every reply has them exactly once.
+  const fullText = composeSupportReply(body);
 
   const supabase = getSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
@@ -57,7 +57,7 @@ export async function POST(request: Request, { params }: Params) {
 
   if (mode === "send" && row.email) {
     try {
-      await sendSupportReply({ to: row.email, ticketNumber: row.ticket_number, body });
+      await sendSupportReply({ to: row.email, ticketNumber: row.ticket_number, text: fullText });
       sent = true;
     } catch (sendError) {
       console.error("[agent] reply email failed:", sendError);
@@ -65,10 +65,10 @@ export async function POST(request: Request, { params }: Params) {
     }
   }
 
-  // The draft is always kept as the record of what was written.
+  // The full text is always kept as the record of what was (or would have been) sent.
   const { error: saveError } = await supabase
     .from("feedback")
-    .update({ reply_draft: body, ...(sent ? { reply_sent_at: new Date().toISOString() } : {}) })
+    .update({ reply_draft: fullText, ...(sent ? { reply_sent_at: new Date().toISOString() } : {}) })
     .eq("id", row.id);
   if (saveError) {
     console.error("[agent] saving reply failed:", saveError);

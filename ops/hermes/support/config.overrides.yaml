@@ -7,7 +7,7 @@
 #
 # Safety model, verified with `hermes -p support approvals test -- <command>`
 # (nothing executes): manual mode means anything not allowlisted is refused when
-# no human answers; only `pokectl *` is allowlisted; deny rules are fnmatch globs
+# no human answers; only specific `pokectl` commands are allowlisted; deny rules are fnmatch globs
 # that block secret paths, network tools, scripting languages, and shell chaining
 # or substitution. These are policy, not a sandbox. See docs/agents/runbook.md.
 
@@ -66,8 +66,14 @@ approvals:
     - "*<*"
     - "*\n*"
 
+# Only the commands the bot needs. It cannot run `pokectl sync`, `report`, or
+# `ticket story`, which can read the customer's email address or post to Telegram.
 command_allowlist:
-  - "pokectl *"
+  - "pokectl policy"
+  - "pokectl ticket get *"
+  - "pokectl ticket recent*"
+  - "pokectl ticket classify *"
+  - "pokectl ticket reply *"
 
 # Dispatcher settings live on the default profile (the gateway host), not here:
 #   kanban.max_in_progress: 1

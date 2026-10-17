@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 import {
   AGENT_TICKET_COLUMNS,
   CLASSIFICATIONS,
+  FINISHED_STATUSES,
   SEVERITIES,
   TICKET_STATUSES,
   canTransition,
@@ -23,6 +24,8 @@ const patchSchema = z.object({
   severity: z.enum(SEVERITIES).optional(),
   triage_notes: z.string().trim().min(1).max(2000).optional(),
   duplicate_of: z.coerce.number().int().positive().optional(),
+  // Set by the report pass once a finished ticket's card has gone to Telegram.
+  reported: z.literal(true).optional(),
   actor: z.string().trim().min(1).max(40).optional().default("support-bot"),
 });
 
@@ -54,7 +57,23 @@ export async function GET(request: Request, { params }: Params) {
     .order("created_at", { ascending: true })
     .limit(30);
 
-  return NextResponse.json({ ok: true, ticket: toAgentTicket(row), events: events ?? [] });
+  // Duplicates are stored by id; readers want the ticket number.
+  let duplicateOfTicket: number | null = null;
+  if (row.duplicate_of) {
+    const { data: dup } = await supabase
+      .from("feedback")
+      .select("ticket_number")
+      .eq("id", row.duplicate_of)
+      .maybeSingle();
+    duplicateOfTicket = dup?.ticket_number ?? null;
+  }
+
+  const includeEmail = new URL(request.url).searchParams.get("include_email") === "1";
+  return NextResponse.json({
+    ok: true,
+    ticket: { ...toAgentTicket(row, includeEmail), duplicate_of_ticket: duplicateOfTicket },
+    events: events ?? [],
+  });
 }
 
 export async function PATCH(request: Request, { params }: Params) {
@@ -66,7 +85,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const parsed = patchSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid update." }, { status: 400 });
-  const { status, classification, severity, triage_notes, duplicate_of, actor } = parsed.data;
+  const { status, classification, severity, triage_notes, duplicate_of, reported, actor } = parsed.data;
 
   const supabase = getSupabaseServerClient();
   if (!supabase) return NextResponse.json({ error: "Database isn't configured." }, { status: 502 });
@@ -102,6 +121,13 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "Resolving needs a classification." }, { status: 400 });
   }
 
+  if (reported && !(FINISHED_STATUSES as readonly string[]).includes(row.status)) {
+    return NextResponse.json(
+      { error: "Only a triaged or resolved ticket can be marked reported." },
+      { status: 409 }
+    );
+  }
+
   let duplicateId: string | undefined;
   if (duplicate_of !== undefined) {
     if (duplicate_of === row.ticket_number) {
@@ -130,6 +156,7 @@ export async function PATCH(request: Request, { params }: Params) {
     ...(severity ? { severity } : {}),
     ...(triage_notes ? { triage_notes } : {}),
     ...(duplicateId ? { duplicate_of: duplicateId } : {}),
+    ...(reported ? { reported_at: new Date().toISOString() } : {}),
     ...(status === "queued" && row.status !== "queued" ? { queued_at: new Date().toISOString() } : {}),
   };
   if (Object.keys(changes).length === 0) {
@@ -152,7 +179,8 @@ export async function PATCH(request: Request, { params }: Params) {
     return NextResponse.json({ error: "That ticket just changed. Reload and retry." }, { status: 409 });
   }
 
-  await logTicketEvent(supabase, row.id, actor, "update", {
+  const onlyReported = reported && Object.keys(changes).length === 1;
+  await logTicketEvent(supabase, row.id, actor, onlyReported ? "reported" : "update", {
     from_status: row.status,
     ...changes,
     ...(duplicate_of !== undefined ? { duplicate_of_ticket: duplicate_of } : {}),

@@ -29,10 +29,18 @@ function escapeHtml(s: string) {
     .replace(/"/g, "&quot;");
 }
 
+// Where replies to our emails should land. Without it, "just reply to this email"
+// would go to the sender address, which can't receive mail.
+function replyToAddress() {
+  const value = process.env.FEEDBACK_REPLY_TO?.trim();
+  return value ? value : undefined;
+}
+
 type SupportReplyInput = {
   to: string;
   ticketNumber: number;
-  body: string;
+  /** The complete message, greeting and closing included (see composeSupportReply). */
+  text: string;
 };
 
 /** Sends a Support bot reply. Throws on failure so the caller never marks it sent. */
@@ -44,18 +52,18 @@ export async function sendSupportReply(input: SupportReplyInput) {
   }
 
   const ticket = formatTicketNumber(input.ticketNumber);
-  const text = `${input.body}\n\nTicket: ${ticket}. Reply to this email if you have more to add.`;
-  const paragraphs = input.body
+  const paragraphs = input.text
     .split(/\n{2,}/)
     .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
     .join("");
-  const html = `<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:520px">${paragraphs}<p style="color:#555">Ticket: ${ticket}. Reply to this email if you have more to add.</p></div>`;
+  const html = `<div style="font-family:system-ui,sans-serif;line-height:1.5;color:#1a1a1a;max-width:520px">${paragraphs}<p style="color:#777;font-size:12px">Ticket ${ticket}</p></div>`;
 
   const { error } = await resend.emails.send({
     from,
     to: input.to,
+    replyTo: replyToAddress(),
     subject: `Re: ${ticket}`,
-    text,
+    text: `${input.text}\n\nTicket ${ticket}`,
     html,
   });
   if (error) throw new Error(`Resend error: ${error.message}`);
@@ -100,6 +108,7 @@ Expect a first update within ${updateWindow}. If we need more from you, we'll re
   const { error } = await resend.emails.send({
     from,
     to: input.to,
+    replyTo: replyToAddress(),
     subject: `We got it: ${ticket}`,
     text,
     html,

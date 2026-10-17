@@ -48,6 +48,7 @@ type TriageColumns = {
   reply_draft: string | null;
   reply_sent_at: string | null;
   queued_at: string | null;
+  reported_at: string | null;
 };
 
 export type FeedbackRow = {
