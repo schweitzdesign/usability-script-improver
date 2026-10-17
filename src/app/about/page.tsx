@@ -357,7 +357,7 @@ export default function AboutPage() {
             />
           </Chapter>
 
-          <Chapter id="sketch-and-plan" tone="forest" title="Step 1: sketch it, then plan it">
+          <Chapter id="sketch-and-plan" tone="forest" title="Sketch it, then plan it">
             <P>
               I started on paper. I sketched the whole flow, described the sketch out loud to Claude Code in plan mode, and asked
               for a PRD with diagrams. A rule I held to for the whole project: plan first, get my approval, then build.
@@ -374,7 +374,7 @@ export default function AboutPage() {
             />
           </Chapter>
 
-          <Chapter id="front-door" tone="vermilion" title="Step 2: build the front door first">
+          <Chapter id="front-door" tone="vermilion" title="Build the front door first">
             <P>
               Agents need something to manage. So before any bot existed, I added a Feedback button to POKE that saves reports to a
               database and emails a confirmation. Three screenshots, three proofs: the form works, the data lands, and the
@@ -397,7 +397,7 @@ export default function AboutPage() {
             />
           </Chapter>
 
-          <Chapter id="a-home-for-the-team" tone="chartreuse" title="Step 3: give the team a home">
+          <Chapter id="a-home-for-the-team" tone="chartreuse" title="Give the team a home">
             <P>
               The team lives on a small server running Hermes, an open agent runtime, and talks to me through Telegram. This was
               the least glamorous part of the project: keys, configs, consoles, and spending limits. I capped each AI account with
