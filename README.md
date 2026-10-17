@@ -18,9 +18,12 @@ the product and the brand. A "Feedback" button in the header sends bug reports a
 ideas into a `feedback` table, with a confirmation email when the sender leaves an
 address.
 
-Where this is headed: a small team of role-based agents (support, product manager,
-design-engineer) that manage POKE from alpha to beta, with Telegram as the comms
-gateway. The plan lives in [`docs/agents/`](docs/agents/).
+Behind that button is a small team of AI agents (support, product manager,
+design-engineer) that triages feedback, groups it, designs the fix, and asks the
+Director of Product for one tap. A yes to a small, safe change is built, checked,
+and deployed to production automatically, and Telegram says when it is live. Start
+with [`docs/agents/README.md`](docs/agents/README.md); the plan, diagrams, runbook,
+and a bank of real problems kept for demos are alongside it.
 
 ## Getting started
 
@@ -145,9 +148,15 @@ more than coverage.
   ongoing chat, with a zero-token onboarding path for low-detail submissions.
 - **Phase 3**: accounts and a history of submissions/feedback per user; possibly
   streaming chat replies.
+- **Feedback loop (built)**: the in-app feedback form and the agent team described in
+  [`docs/agents/`](docs/agents/), including automatic shipping of small, approved changes.
 
 ## Deploy
 
 Deploys cleanly to [Vercel](https://vercel.com/new). Set `SUPABASE_URL`,
 `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, and
-`FEEDBACK_FROM_EMAIL` as environment variables in the project settings.
+`FEEDBACK_FROM_EMAIL` as environment variables in the project settings. The agent
+team also needs `AGENT_API_TOKEN` and `SHIP_API_TOKEN` (and optionally
+`AGENT_REPLY_MODE`, `FEEDBACK_REPLY_TO`, and `AGENT_MONTHLY_BUDGET_USD`); see
+`.env.local.example`. Run the SQL files in `supabase/migrations/` in order in the
+Supabase SQL Editor before deploying code that needs them.
