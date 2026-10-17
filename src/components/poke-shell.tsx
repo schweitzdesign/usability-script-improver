@@ -56,10 +56,10 @@ export function PokeShell({
       </a>
 
       <header className="border-border border-b">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           {/* Real <a>, not next/link: a hard reload is the reset mechanism for now
               (this page holds all its state client-side; a same-route Link wouldn't remount it). */}
-          <a href={demoBadge ? "/demo" : "/"} className="focus-visible:ring-ring rounded-md outline-none focus-visible:ring-2">
+          <a href={demoBadge ? "/demo" : "/"} className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md outline-none focus-visible:ring-2">
             <Wordmark size="sm" />
           </a>
           <div className="flex items-center gap-3">

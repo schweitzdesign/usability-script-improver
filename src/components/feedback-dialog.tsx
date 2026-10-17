@@ -121,7 +121,7 @@ export function FeedbackDialog({ demo = false }: { demo?: boolean }) {
         if (!isOpen) reset();
       }}
     >
-      <Dialog.Trigger className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-9 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none focus-visible:ring-2">
+      <Dialog.Trigger className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium outline-none focus-visible:ring-2">
         <MessageSquare className="h-4 w-4" aria-hidden="true" />
         Feedback
       </Dialog.Trigger>
