@@ -32,6 +32,7 @@ shipping pipeline exist and have run in production.
 | **Design-Engineer bot** | Hermes profile, Claude Sonnet 5. Reads a read-only copy of the code, proposes the fix. No shell. | Droplet, reference copy in `ops/hermes/eng/` |
 | **Decision page** | One page per recommendation with the verdict, the plan, and three choices. | `src/app/decide/[token]/` |
 | **Build job** | A GitHub Actions workflow where Claude Code writes the change with no shell, then plain code checks it. | `.github/workflows/ship.yml` |
+| **Case study page** | A standalone `/about` page telling the story of the capstone, with 29 screenshots. Sensitive parts of the screenshots (links, email, server details) are blacked out. The shipping guard refuses automatic edits to it. | `src/app/about/`, images in `public/about/` |
 | **Telegram** | Where the agents talk to Zach, as plain, code-composed cards. | Telegram |
 | **Cost ledger** | Every model call (the app's and the bots') with tokens and dollars. | `usage_events` table |
 | **Zach** | Director of Product. Decides with one tap. | Telegram and the decision page |
@@ -171,6 +172,10 @@ runbook).
 - **2026-10-17 evening** The ship pipeline: CI, the build job, the guard, the live notice, and the Ship API. The
   first automatic change went from approval to live in production in about 3 minutes. Two safety drills passed
   (an injection attempt, and a change that must not auto-merge).
+
+- **2026-10-18** The case study page went live at `/about`, written in Zach's voice from his capstone notes and screenshots. The
+  screenshots were redacted before publishing: live decision links, a personal email address, the server's public address,
+  workspace ids, and a credit balance. The demo scripts and the demo bank were verified against production before recording.
 
 ## Resuming this work
 
