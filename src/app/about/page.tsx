@@ -105,7 +105,7 @@ function Fig({
  * The overview video that sits at the top of the page. Paste the embed link (for example a Loom
  * or YouTube "embed" URL) between the quotes. While it is empty, nothing is shown.
  */
-const OVERVIEW_VIDEO_URL = "";
+const OVERVIEW_VIDEO_URL = "https://www.youtube.com/embed/CqLC7IxQvrY";
 const OVERVIEW_VIDEO_TITLE = "Overview of the POKE agent team, from a user’s report to a live fix";
 const OVERVIEW_VIDEO_CAPTION =
   "The whole project in one video: a user reports a problem, the team triages it, I tap Yes, and the fix goes live.";
@@ -118,7 +118,8 @@ function OverviewVideo() {
           src={OVERVIEW_VIDEO_URL}
           title={OVERVIEW_VIDEO_TITLE}
           loading="lazy"
-          allow="fullscreen; picture-in-picture"
+          allow="fullscreen; picture-in-picture; encrypted-media; clipboard-write; web-share"
+          referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
           className="size-full"
         />
