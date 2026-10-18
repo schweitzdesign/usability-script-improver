@@ -53,7 +53,7 @@ fix"). That exercises the reopen path, produces a fresh assessment, and a new ca
 
 > **Used 2026-10-18.** This demo was recorded as B-023 and shipped automatically in about 2 minutes
 > (pull request 4, `tabIndex={-1}` on the wrapper). The bug no longer exists on the live site, so this
-> item cannot be repeated. The copy nitpicks above are still unfixed for the live class demo.
+> item cannot be repeated. The copy nitpicks in this file are still unfixed for the live class demo.
 
 - **Where:** home page, keyboard only. After the script box, the first Tab lands on an invisible
   wrapper (a square outline), and the second lands on the real button (a rounded outline).
