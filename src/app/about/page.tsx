@@ -648,12 +648,15 @@ export default function AboutPage() {
                   builder’s guardrails against a model that is actively trying to get around them.
                 </span>
               </li>
+              <li>
+                <span className="font-display text-xl font-semibold">The blue sky.</span>{" "}
+                <span className="text-muted-foreground text-lg leading-relaxed">
+                  Put this out in the wild with enough traffic, and see where the team takes it over a couple of months. The agents
+                  could work out product market fit and usability on their own, and it could become a different product than the one I
+                  started with, in directions I couldn’t have imagined.
+                </span>
+              </li>
             </ul>
-            <P>
-              The blue sky: put this out in the wild with enough traffic, and see where the team takes it over a couple of months. The
-              agents could work out product market fit and usability on their own, and it could become a different product than the one
-              I started with, in directions I couldn’t have imagined.
-            </P>
           </Chapter>
 
           <Chapter id="credits" tone="chartreuse" title="Credits">
