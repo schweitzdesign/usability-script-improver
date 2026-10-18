@@ -662,6 +662,13 @@ export default function AboutPage() {
 
           <Chapter id="credits" tone="chartreuse" title="Credits">
             <P>
+              This project was my capstone for the{" "}
+              <a href="https://www.overclockaccelerator.com" className="text-forest font-medium underline underline-offset-4">
+                Overclock Accelerator
+              </a>
+              . I took the course together as a cohort with the Project Management Institute (PMI) Software and AI Products team.
+            </P>
+            <P>
               The PM bot’s instructions borrow ideas from Dean Peters’ Product Manager Skills, and the Design-Engineer’s from the
               open design-engineer skill by ddruids. Both were written from scratch, with credit. The agents run on Hermes, from Nous
               Research, and everything was built with Claude Code and Claude models from Anthropic. The stack is Next.js and
