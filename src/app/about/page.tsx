@@ -103,8 +103,8 @@ function Fig({
 
 const STATS = [
   { value: "3", label: "bots on the team: Support, PM, and Design-Engineer" },
-  { value: "1", label: "human tap, from me, is the only approval" },
-  { value: "1:48", label: "from my tap to live in production, on a real ticket" },
+  { value: "1", label: "human tap, mine, is the only approval" },
+  { value: "1m 48s", label: "from my tap on Yes to the change being live in production" },
 ];
 
 type Step = { title: string; body: React.ReactNode; fig: React.ReactNode };
@@ -304,6 +304,9 @@ export default function AboutPage() {
                 </div>
               ))}
             </dl>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              The time is from one real ticket on October 17: I tapped Yes at 3:54 PM, and the change was live in production at 3:56 PM.
+            </p>
             <Fig
               name="poke-feedback-and-decision"
               alt="Two screens side by side: POKE’s new Feedback form, and the decision page that asks me to approve or reject a recommendation."
