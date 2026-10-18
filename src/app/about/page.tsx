@@ -281,9 +281,10 @@ const LEARNED = [
     body: "About a day or two for the first web app, half a day to spin up the first agent, and another day to get the other agents working together. That is what a proof of concept costs. How good it is, and how many bugs are left, is a separate question.",
   },
   {
-    title: "Running the whole stack makes cost real.",
-    body: "I come from a design and product lens, so this was new to me. My estimate for what each ticket would cost was off by about 3x. At this scale it is pennies, but picture being 3x off in an enterprise product, and how fast that adds up.",
+    title: "Running the whole stack makes cost tangible.",
+    body: "In enterprise product design, the numbers are abstracted away. They are big, someone else manages them, and they carry a lot of complexity. Here I watched real numbers on my own screen, and my estimate for what each ticket would cost was off by about 3x. At this scale it is pennies, but now I can see how wrong a 3x miss would be in a real product.",
   },
+
   {
     title: "Everything is a trade-off.",
     body: "Do I polish the experience, or finish the plumbing first? Do I make the Telegram messages easier for my support team to read, or fix the bugs so those tickets never reach them? Those are the calls you make when you manage the whole business, and here I was managing a team of agent employees: estimating time, watching cost, and choosing what to leave undone.",
@@ -297,9 +298,10 @@ const LEARNED = [
     body: "At one point the build felt stretchy, so I picked a small, real, visible bug and made everything serve that demo. The goal was to prove the idea, not to ship it, live with it, and maintain it. It is the same situation as convincing a board, or answering a stakeholder request without pulling the team off their work.",
   },
   {
-    title: "The big one: savvy, specific choices get you to end to end fast.",
-    body: "And once you have been end to end, you know the real effort to do it well, and what it would take to improve it, productize it, and sell it. It matches what I see in class. A 40 minute demo can make something work, but most things take about half a day to really work, and a dedicated sprint to work pretty well. That is a useful way to estimate.",
+    title: "Going end to end once tells you the real effort.",
+    body: "A rough proof of concept shows you what it would take to do it well, and what it would take to improve it, turn it into a product, and sell it. It matches what I see in class. A 40 minute demo can make something work, but most things take about half a day to really work, and a dedicated sprint to work pretty well. That is a useful way to estimate.",
   },
+
   {
     title: "The technical lessons, in one line.",
     body: "Plan first, verify by running it, make the bots’ work readable, keep a human tap on every decision, and treat cost as a feature.",
@@ -628,12 +630,30 @@ export default function AboutPage() {
           </Chapter>
 
           <Chapter id="whats-next" tone="vermilion" title="What’s next">
-            <ul className="list-disc space-y-3 pl-6 text-lg leading-relaxed">
-              <li>Have Support tell the original reporter when their issue ships.</li>
-              <li>Turn on real email replies, once I have a verified sending domain.</li>
-              <li>Test the builder’s guardrails against a model that’s actively trying to get around them.</li>
-              <li>Let bigger changes through, but only with a second approval from me.</li>
+            <ul className="space-y-4">
+              <li>
+                <span className="font-display text-xl font-semibold">Validate the app with real users.</span>{" "}
+                <span className="text-muted-foreground text-lg leading-relaxed">
+                  I haven’t spent much time on the quality of the results yet, and that matters most. I need real feedback on what it is
+                  like to use POKE, then I need to tune the guidance it gives. If this were a real product, the core app comes first.
+                </span>
+              </li>
+              <li>
+                <span className="font-display text-xl font-semibold">Harden the agent team.</span>{" "}
+                <span className="text-muted-foreground text-lg leading-relaxed">
+                  The agents are a proof of concept. For the demo, I narrowed how changes reach production: a known, straightforward bug
+                  can be fixed, but real feedback is rarely that clear. It might be a bug, a feature request, a problem with what the AI
+                  says, or a problem with how it is presented. It might be about speed, browsers, or screen sizes. Next, I want the team
+                  to triage realistic feedback better, make better decisions, and choose safer ways to ship, including testing the
+                  builder’s guardrails against a model that is actively trying to get around them.
+                </span>
+              </li>
             </ul>
+            <P>
+              The blue sky: put this out in the wild with enough traffic, and see where the team takes it over a couple of months. The
+              agents could work out product market fit and usability on their own, and it could become a different product than the one
+              I started with, in directions I couldn’t have imagined.
+            </P>
           </Chapter>
 
           <Chapter id="credits" tone="chartreuse" title="Credits">
