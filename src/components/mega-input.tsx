@@ -207,6 +207,7 @@ export function MegaInput({
           >
             <motion.span
               className="inline-block"
+              tabIndex={-1}
               whileHover={!submitting ? { scale: 1.05 } : undefined}
               whileTap={!submitting ? { scale: 0.93 } : undefined}
               transition={SPRING_PRESS}
