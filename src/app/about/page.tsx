@@ -84,7 +84,7 @@ function Fig({
 }) {
   const img = IMAGES[name];
   return (
-    <figure className="my-2 space-y-3">
+    <figure className="mb-8 space-y-3">
       <div className={cn("overflow-hidden rounded-xl ring-1 ring-foreground/15", narrow && "mx-auto max-w-sm")}>
         <Image
           src={img.src}
@@ -97,6 +97,33 @@ function Fig({
         />
       </div>
       <figcaption className="text-muted-foreground text-sm leading-relaxed">{caption}</figcaption>
+    </figure>
+  );
+}
+
+/**
+ * The overview video that sits at the top of the page. Paste the embed link (for example a Loom
+ * or YouTube "embed" URL) between the quotes. While it is empty, nothing is shown.
+ */
+const OVERVIEW_VIDEO_URL = "";
+const OVERVIEW_VIDEO_TITLE = "Overview of the POKE agent team, from a user’s report to a live fix";
+const OVERVIEW_VIDEO_CAPTION =
+  "The whole project in one video: a user reports a problem, the team triages it, I tap Yes, and the fix goes live.";
+
+function OverviewVideo() {
+  return (
+    <figure className="mb-8 space-y-3">
+      <div className="aspect-video overflow-hidden rounded-xl ring-1 ring-foreground/15">
+        <iframe
+          src={OVERVIEW_VIDEO_URL}
+          title={OVERVIEW_VIDEO_TITLE}
+          loading="lazy"
+          allow="fullscreen; picture-in-picture"
+          allowFullScreen
+          className="size-full"
+        />
+      </div>
+      <figcaption className="text-muted-foreground text-sm leading-relaxed">{OVERVIEW_VIDEO_CAPTION}</figcaption>
     </figure>
   );
 }
@@ -249,12 +276,34 @@ const WRONG = [
 ];
 
 const LEARNED = [
-  { title: "Plan first, then build.", body: "Almost every step started with a plan I read and changed. It was slower for ten minutes and faster for the rest." },
-  { title: "Verify by running it.", body: "Most real bugs only showed up in live runs: a bot that invented a feature, a duplicate loop, a step that was written but never wired in." },
-  { title: "Make the work readable.", body: "If I can’t read what a bot did, I can’t trust it. The cards, the status messages, and the decision page are a bigger part of this project than the bots." },
-  { title: "Humans decide, agents do the legwork.", body: "The bots recommended a change I didn’t believe in, and I said no. That tap is the product." },
-  { title: "Cost is a feature.", body: "Caps, a cost ledger, and estimates I checked against reality kept the whole thing to a few dollars of AI spend so far." },
-  { title: "Demo-driven development works.", body: "Choosing a small, real, visible bug first made every design decision easier: if it didn’t help that demo, it waited." },
+  {
+    title: "I got a real sense of time.",
+    body: "About a day or two for the first web app, half a day to spin up the first agent, and another day to get the other agents working together. That is what a proof of concept costs. How good it is, and how many bugs are left, is a separate question.",
+  },
+  {
+    title: "Running the whole stack makes cost real.",
+    body: "I come from a design and product lens, so this was new to me. My estimate for what each ticket would cost was off by about 3x. At this scale it is pennies, but picture being 3x off in an enterprise product, and how fast that adds up.",
+  },
+  {
+    title: "Everything is a trade-off.",
+    body: "Do I polish the experience, or finish the plumbing first? Do I make the Telegram messages easier for my support team to read, or fix the bugs so those tickets never reach them? Those are the calls you make when you manage the whole business, and here I was managing a team of agent employees: estimating time, watching cost, and choosing what to leave undone.",
+  },
+  {
+    title: "Specificity is the greatest accelerator.",
+    body: "The more exactly I said what I wanted, why I wanted it, and what I did not want, the better the result.",
+  },
+  {
+    title: "Demo-driven design keeps a proof of concept honest.",
+    body: "At one point the build felt stretchy, so I picked a small, real, visible bug and made everything serve that demo. The goal was to prove the idea, not to ship it, live with it, and maintain it. It is the same situation as convincing a board, or answering a stakeholder request without pulling the team off their work.",
+  },
+  {
+    title: "The big one: savvy, specific choices get you to end to end fast.",
+    body: "And once you have been end to end, you know the real effort to do it well, and what it would take to improve it, productize it, and sell it. It matches what I see in class. A 40 minute demo can make something work, but most things take about half a day to really work, and a dedicated sprint to work pretty well. That is a useful way to estimate.",
+  },
+  {
+    title: "The technical lessons, in one line.",
+    body: "Plan first, verify by running it, make the bots’ work readable, keep a human tap on every decision, and treat cost as a feature.",
+  },
 ];
 
 export default function AboutPage() {
@@ -280,6 +329,7 @@ export default function AboutPage() {
               A feedback loop where AI agents triage reports, design the fix, and ship it to a live product, with one human tap in the middle.
             </p>
             <p className="text-muted-foreground text-sm">Zach Schweitzer · October 2026</p>
+            {OVERVIEW_VIDEO_URL && <OverviewVideo />}
             <Fig
               name="poke-home"
               priority
