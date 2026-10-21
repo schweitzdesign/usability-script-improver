@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { TaskDraftCard } from "@/components/task-draft-card";
 import { RefinementCard } from "@/components/refinement-card";
 import { QuickChoiceCard } from "@/components/quick-choice-card";
@@ -28,7 +29,25 @@ export function ChatThread({
   onSend: (text: string) => void;
   isSending: boolean;
 }) {
+  const reduceMotion = useReducedMotion();
   const [draft, setDraft] = useState("");
+  const [shakeCount, setShakeCount] = useState(0);
+  const [showEmptyError, setShowEmptyError] = useState(false);
+
+  useEffect(() => {
+    if (!showEmptyError) return;
+    const t = setTimeout(() => setShowEmptyError(false), 2200);
+    return () => clearTimeout(t);
+  }, [showEmptyError]);
+
+  function handleSendClick() {
+    if (!draft.trim()) {
+      setShakeCount((c) => c + 1);
+      setShowEmptyError(true);
+      return;
+    }
+    submit();
+  }
 
   function submit() {
     if (!draft.trim() || isSending) return;
@@ -118,13 +137,30 @@ export function ChatThread({
           placeholder="Reply…"
           className="border-ink bg-bone focus-visible:ring-ring flex-1 resize-none rounded-2xl border-[3px] px-4 py-3 text-base outline-none focus-visible:ring-2"
         />
-        <Button
-          onClick={submit}
-          disabled={!draft.trim() || isSending}
-          className="border-ink hover:rotate-0 rotate-[1.5deg] rounded-2xl border-[3px] px-6 font-bold shadow-[4px_4px_0_var(--ink)] transition-transform duration-200 ease-[var(--ease-brand)] disabled:rotate-0 disabled:shadow-none"
-        >
-          Send
-        </Button>
+        <div className="flex flex-col items-center gap-1.5">
+          <motion.span
+            key={shakeCount}
+            className="inline-block"
+            animate={shakeCount > 0 && !reduceMotion ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : undefined}
+            transition={{ duration: 0.4 }}
+          >
+            <Button
+              onClick={handleSendClick}
+              disabled={isSending}
+              className={cn(
+                "border-ink hover:rotate-0 rotate-[1.5deg] rounded-2xl border-[3px] px-6 font-bold shadow-[4px_4px_0_var(--ink)] transition-transform duration-200 ease-[var(--ease-brand)] disabled:rotate-0 disabled:shadow-none",
+                showEmptyError && "border-vermilion-ink"
+              )}
+            >
+              Send
+            </Button>
+          </motion.span>
+          {showEmptyError && (
+            <p role="alert" className="text-vermilion-ink text-sm font-medium">
+              Type something to send.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
