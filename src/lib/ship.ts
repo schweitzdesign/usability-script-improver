@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import type { BacklogAssessmentRow, BacklogItemRow } from "@/lib/supabase";
 import { riskFlags } from "@/lib/backlog";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 function digest(s: string) {
   return createHash("sha256").update(s).digest();
@@ -13,6 +14,8 @@ function digest(s: string) {
  * brief for an item that is being built and report how the build went, and nothing else.
  */
 export function requireShip(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
   const expected = process.env.SHIP_API_TOKEN;
   if (!expected) return NextResponse.json({ error: "Shipping isn't configured." }, { status: 503 });
   const header = request.headers.get("authorization") ?? "";

@@ -8,6 +8,15 @@ usability test. Most usability tests are designed to validate; POKE helps you di
 
 Built with Next.js (App Router), TypeScript, Tailwind CSS, and shadcn/ui.
 
+## Portfolio mode: the alpha has closed
+
+POKE is finished, so it now runs as a portfolio piece. With `PORTFOLIO_MODE=1` set in Vercel, the home page
+shows a banner and a dialog that points to the [demo](/demo) and the [case study](/about), and every route
+that spends money answers `503 portfolio_closed`. The demo (canned data, no API calls) and the case study stay
+up. Reopening is one setting: unset `PORTFOLIO_MODE`, add the API keys back, and see
+[`docs/agents/runbook.md`](docs/agents/runbook.md#portfolio-mode-closing-and-reopening-the-alpha). The agent team
+described below was shut down; the docs stay as the record of how it worked.
+
 ## Status: Phase 2
 
 One big paste-or-drop input (no accounts, no name/email required) → saved to Supabase

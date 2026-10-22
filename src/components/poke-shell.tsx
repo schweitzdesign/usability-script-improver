@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Wordmark } from "@/components/wordmark";
 import { MegaInput } from "@/components/mega-input";
@@ -8,6 +10,8 @@ import { BrandCluster } from "@/components/brand-cluster";
 import { MarketingSections } from "@/components/marketing-sections";
 import { DevPreviewPanel } from "@/components/dev-preview-panel";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { PortfolioBanner } from "@/components/portfolio-banner";
+import { ClosedDialog } from "@/components/closed-dialog";
 import { DURATION_BASE, EASE_OUT, STAGGER_CONTAINER, FADE_UP, POP_IN } from "@/lib/motion";
 import type { PokeController } from "@/hooks/use-poke-controller";
 
@@ -21,12 +25,16 @@ export function PokeShell({
   controller,
   showPreviewPanel,
   demoBadge,
+  closed = false,
 }: {
   controller: PokeController;
   showPreviewPanel: boolean;
   demoBadge?: boolean;
+  /** The alpha has closed: show the banner and open a dialog when someone tries to use the app. */
+  closed?: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const [closedDialogOpen, setClosedDialogOpen] = useState(false);
   const {
     text,
     setText,
@@ -55,6 +63,8 @@ export function PokeShell({
         Skip to input
       </a>
 
+      {closed && <PortfolioBanner />}
+
       <header className="border-border border-b">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
           {/* Real <a>, not next/link: a hard reload is the reset mechanism for now
@@ -62,13 +72,21 @@ export function PokeShell({
           <a href={demoBadge ? "/demo" : "/"} className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md outline-none focus-visible:ring-2">
             <Wordmark size="sm" />
           </a>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {demoBadge && (
               <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500">
-                Demo — canned data, no API calls
+                Demo: canned data, no API calls
               </span>
             )}
-            <FeedbackDialog demo={demoBadge} />
+            {(closed || demoBadge) && (
+              <Link
+                href="/about"
+                className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium underline underline-offset-4 outline-none focus-visible:ring-2"
+              >
+                Case study
+              </Link>
+            )}
+            {!closed && <FeedbackDialog demo={demoBadge} />}
           </div>
         </div>
       </header>
@@ -142,6 +160,8 @@ export function PokeShell({
                     onFileChange={setFile}
                     onSubmit={handleSubmit}
                     submitting={false}
+                    closed={closed}
+                    onClosedAttempt={() => setClosedDialogOpen(true)}
                   />
                 </motion.div>
               )}
@@ -160,6 +180,8 @@ export function PokeShell({
       </footer>
 
       {showPreviewPanel && <DevPreviewPanel onApply={applyPreview} onClear={handleReset} />}
+
+      {closed && <ClosedDialog open={closedDialogOpen} onOpenChange={setClosedDialogOpen} />}
     </div>
   );
 }

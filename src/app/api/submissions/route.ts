@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import mammoth from "mammoth";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 export const runtime = "nodejs";
 
@@ -15,6 +16,9 @@ const metaSchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
+
   const formData = await request.formData();
 
   const parsed = metaSchema.safeParse({

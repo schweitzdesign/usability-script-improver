@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sendFeedbackAck } from "@/lib/email";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     // Only the message field has copy written for people; anything else is

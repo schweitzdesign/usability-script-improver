@@ -8,6 +8,7 @@ import { DRAFT_TASKS_TOOL, DraftTasksResultSchema, type DraftTasksResult } from 
 import { REFINE_TASK_TOOL, refineTaskWording, type RefinementResult } from "@/lib/tools/refine-task";
 import { ASK_CHOICE_TOOL, AskChoiceResultSchema, type AskChoiceResult } from "@/lib/tools/ask-choice";
 import type { GradeResult } from "@/lib/grading";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,9 @@ export const runtime = "nodejs";
 const MAX_TOOL_ITERATIONS = 4;
 
 export async function POST(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
+
   const parsed = ChatRequestSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Malformed chat request." }, { status: 400 });

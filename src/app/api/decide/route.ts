@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { applyDecision, decisionBodySchema } from "@/lib/backlog";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,9 @@ const MESSAGES: Record<string, { status: number; error: string }> = {
 // The decision page posts here. There is no login: the link itself is the credential
 // (unguessable, single use, expires), so this handler stays small and strict.
 export async function POST(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
+
   const parsed = decisionBodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "Invalid decision." }, { status: 400 });
 

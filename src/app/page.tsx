@@ -1,12 +1,11 @@
-"use client";
+import { connection } from "next/server";
+import { isPortfolioMode } from "@/lib/portfolio";
+import { LiveApp } from "./live-app";
 
-import { usePokeController } from "@/hooks/use-poke-controller";
-import { PokeShell } from "@/components/poke-shell";
+export default async function Home() {
+  // Read the setting on every request, so flipping PORTFOLIO_MODE in Vercel takes effect
+  // without a rebuild. Without this the page would be prerendered and the value baked in.
+  await connection();
 
-export default function Home() {
-  const controller = usePokeController("live");
-
-  return (
-    <PokeShell controller={controller} showPreviewPanel={process.env.NODE_ENV !== "production"} />
-  );
+  return <LiveApp closed={isPortfolioMode()} />;
 }

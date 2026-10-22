@@ -317,8 +317,8 @@ export default function AboutPage() {
           <Link href="/" className="focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md outline-none focus-visible:ring-2">
             <Wordmark size="sm" />
           </Link>
-          <Link href="/" className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium outline-none focus-visible:ring-2">
-            Try POKE
+          <Link href="/demo" className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-11 items-center rounded-md px-2 text-sm font-medium outline-none focus-visible:ring-2">
+            Try the demo
           </Link>
         </div>
       </header>
@@ -630,6 +630,27 @@ export default function AboutPage() {
             </ul>
           </Chapter>
 
+          <Chapter id="where-it-stands" tone="chartreuse" title="Where it stands now">
+            <P>
+              I closed the alpha on purpose. POKE existed to answer one question: could a small team of agents run a product? It
+              could. Keeping it running costs money every month, for a server that hosts the agents, AI calls on every grade and
+              chat, and email, and none of that is needed to show the work. Closing a product deliberately is part of running one,
+              so I did it deliberately instead of letting it quietly break.
+            </P>
+            <P>
+              The home page now says the alpha has closed and points here and to the demo. Everything that spends money is switched
+              off, and the agent team’s server is shut down. What stays up is this page and{" "}
+              <Link href="/demo" className="text-forest font-medium underline underline-offset-4">
+                the demo
+              </Link>
+              , which runs on canned data and calls nothing.
+            </P>
+            <P>
+              It is reversible. One setting reopens the alpha, and the whole setup is written down well enough to bring the team
+              back.
+            </P>
+          </Chapter>
+
           <Chapter id="whats-next" tone="vermilion" title="What’s next">
             <ul className="space-y-4">
               <li>
@@ -676,8 +697,8 @@ export default function AboutPage() {
             </P>
             <p className="text-muted-foreground text-lg leading-relaxed">
               Built by Zach Schweitzer.{" "}
-              <Link href="/" className="text-forest font-medium underline underline-offset-4">
-                Try POKE
+              <Link href="/demo" className="text-forest font-medium underline underline-offset-4">
+                Try the demo
               </Link>
               .
             </p>

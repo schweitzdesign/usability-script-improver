@@ -1,5 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 function digest(s: string) {
   return createHash("sha256").update(s).digest();
@@ -7,6 +8,8 @@ function digest(s: string) {
 
 /** Returns an error response if the request isn't from an agent, or null if it is. */
 export function requireAgent(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
   const expected = process.env.AGENT_API_TOKEN;
   if (!expected) {
     return NextResponse.json({ error: "Agent API isn't configured." }, { status: 503 });
