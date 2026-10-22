@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import { FileText, Loader2, X } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,8 @@ export function MegaInput({
   onFileChange,
   onSubmit,
   submitting,
+  closed = false,
+  onClosedAttempt,
 }: {
   text: string;
   onTextChange: (value: string) => void;
@@ -72,6 +74,9 @@ export function MegaInput({
   onFileChange: (file: File | null) => void;
   onSubmit: () => void;
   submitting: boolean;
+  /** The alpha has closed: the box is read-only and every deliberate attempt calls onClosedAttempt. */
+  closed?: boolean;
+  onClosedAttempt?: () => void;
 }) {
   const reduceMotion = useReducedMotion();
   const [isDragging, setIsDragging] = useState(false);
@@ -100,16 +105,35 @@ export function MegaInput({
     event.preventDefault();
     dragCounterRef.current = 0;
     setIsDragging(false);
+    if (closed) {
+      onClosedAttempt?.();
+      return;
+    }
     acceptFile(event.dataTransfer.files?.[0]);
   }
 
   function handlePokeClick() {
+    if (closed) {
+      onClosedAttempt?.();
+      return;
+    }
     if (!hasContent) {
       setShakeCount((c) => c + 1);
       setShowEmptyError(true);
       return;
     }
     onSubmit();
+  }
+
+  // While closed, only deliberate actions open the dialog. Tab, arrows, Shift, and Escape do
+  // not, and neither does focus itself, so a keyboard user can always move past the box.
+  function handleClosedKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (!closed) return;
+    const printable = e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+    if (printable || e.key === "Enter" || e.key === "Backspace" || e.key === "Delete") {
+      e.preventDefault();
+      onClosedAttempt?.();
+    }
   }
 
   return (
@@ -176,6 +200,17 @@ export function MegaInput({
             <textarea
               value={text}
               onChange={(e) => onTextChange(e.target.value)}
+              readOnly={closed}
+              onClick={closed ? () => onClosedAttempt?.() : undefined}
+              onPaste={
+                closed
+                  ? (e) => {
+                      e.preventDefault();
+                      onClosedAttempt?.();
+                    }
+                  : undefined
+              }
+              onKeyDown={closed ? handleClosedKeyDown : undefined}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               className="flex-1 resize-none bg-transparent text-xl leading-relaxed outline-none"

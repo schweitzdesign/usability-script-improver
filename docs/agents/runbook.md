@@ -340,6 +340,33 @@ read -rsp "Paste the GitHub token: " K; echo; sed -i '/^GITHUB_DISPATCH_TOKEN=/d
 - **A tap on Yes did not start a build:** run `pokectl sync` on the droplet and read its output. Check `POKECTL_SHIP=on`
   and the dispatch token line in `/etc/pokectl.env`, and that the token has not expired.
 
+## Portfolio mode: closing and reopening the alpha
+
+The capstone is done, so the live app is closed to keep running costs at zero while the demo and the case study
+stay online. It is one server-side setting, read on every request.
+
+**What `PORTFOLIO_MODE=1` does** (exactly the value `1`; anything else leaves the app running):
+- `/` shows a slim banner and a dialog on any deliberate attempt to use the box (click, keystroke, paste, file
+  drop, Poke it). Keyboard focus alone never opens it. The Feedback button is replaced by a Case study link.
+- `/api/grade`, `/api/chat`, `/api/submissions`, `/api/feedback`, and `/api/decide` return `503` with
+  `{"code": "portfolio_closed"}` before touching Anthropic, Supabase, Resend, or the file parser.
+- `requireAgent` and `requireShip` return the same `503`, which closes every `/api/agent/*` and `/api/ship/*` route.
+- `/demo` and `/about` are unaffected. The demo makes no API calls.
+- Code: `src/lib/portfolio.ts`, `src/components/portfolio-banner.tsx`, `src/components/closed-dialog.tsx`, and the
+  `closed` props in `src/components/poke-shell.tsx` and `src/components/mega-input.tsx`.
+
+**Closing it (in this order, so nothing spends while keys are removed):**
+1. Deploy the code, then set `PORTFOLIO_MODE=1` in Vercel and redeploy once. Check that the four paid routes answer 503.
+2. Disable the `ship` and `live` workflows in GitHub Actions and delete the `ANTHROPIC_API_KEY` and `SHIP_API_TOKEN` secrets.
+3. Stop the Hermes services on the droplet and revoke the Telegram bot tokens in BotFather.
+4. In Vercel, remove `ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `AGENT_API_TOKEN`, and `SHIP_API_TOKEN`. Keep `PORTFOLIO_MODE`.
+5. Revoke the Resend key and the three Anthropic workspace keys (keep the accounts).
+6. Take a final DigitalOcean snapshot, wait for it to finish, destroy the droplet, delete older snapshots, and
+   check for reserved IPs, volumes, and backups, which keep billing.
+
+**Reopening it:** unset `PORTFOLIO_MODE`, create new API keys and add them to Vercel and the GitHub secrets,
+restore the droplet from the snapshot, create new Telegram tokens, and follow "Verify the droplet matches the repo".
+
 ## Switches and kill switches
 
 Pick the smallest one that does the job.

@@ -8,6 +8,7 @@ import {
   runGrading,
 } from "@/lib/grading";
 import { getSupabaseServerClient } from "@/lib/supabase";
+import { requirePortfolioOpen } from "@/lib/portfolio";
 
 export const runtime = "nodejs";
 
@@ -17,6 +18,9 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  const closed = requirePortfolioOpen();
+  if (closed) return closed;
+
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: "Missing script text." }, { status: 400 });
