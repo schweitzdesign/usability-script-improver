@@ -7,7 +7,7 @@ import { IMAGES, type ImageKey } from "./images";
 
 const TITLE = "I built an app. Then I built the team to run it.";
 const DESCRIPTION =
-  "A case study from my capstone: AI agents that triage feedback, design the fix, and ship it to a live product, with one human tap in the middle.";
+  "A case study in delegating product operations to AI agents: they triage feedback, design the fix, and ship it to a live product, with one human decision in the middle.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://usability-script-improver.vercel.app"),
@@ -175,7 +175,7 @@ const STEPS: Step[] = [
   },
   {
     title: "The PM picks it up",
-    body: "The PM bot told me it had started a backlog item and what it planned to do next. That message is on purpose: it is how I keep the employee honest.",
+    body: "The PM bot told me it had started a backlog item and what it planned to do next. That message is on purpose: it is how I keep the team accountable.",
     fig: (
       <Fig
         name="ship-pm-status"
@@ -234,7 +234,7 @@ const STEPS: Step[] = [
   },
   {
     title: "Measure it again",
-    body: "I hard-refreshed the live site and ran the same measurement. Both now read 44. The bug was reported, fixed, and verified, and I never wrote a line.",
+    body: "I hard-refreshed the live site and ran the same measurement. Both now read 44. The bug was reported, fixed, and verified, and none of the code came from me.",
     fig: (
       <Fig
         name="ship-after"
@@ -269,7 +269,7 @@ const SAFETY = [
 ];
 
 const WRONG = [
-  "Claude and I guessed the agents would cost about a third of what they did. The estimate was off by about 3x, so we found the cause (extra tool-loading steps) and cut the PM’s cost by about 39 percent.",
+  "My cost estimate was about a third of what the agents actually cost. We traced the gap to extra tool-loading steps and cut the PM’s cost by about 39 percent.",
   "We assumed a locked-down shell was safe enough. A real test showed it wasn’t, so we removed the shell entirely.",
   "The agent platform would not let a running bot create tasks. We could have sidestepped that rule. Instead we redesigned the hand-off so a plain script does it.",
   "A fresh copy of the code failed a type check that passed on my machine. The automatic checks caught it before it could break every automatic build.",
@@ -278,8 +278,8 @@ const WRONG = [
 
 const LEARNED = [
   {
-    title: "I got a real sense of time.",
-    body: "About a day or two for the first web app, half a day to spin up the first agent, and another day to get the other agents working together. That is what a proof of concept costs. How good it is, and how many bugs are left, is a separate question.",
+    title: "I learned what a proof of concept costs in time.",
+    body: "About a day or two for the first web app, half a day to stand up the first agent, and another day to get the other agents working together. That is the real price of a proof of concept. How good it is, and how many bugs are left, is a separate question.",
   },
   {
     title: "Running the whole stack makes cost tangible.",
@@ -296,11 +296,11 @@ const LEARNED = [
   },
   {
     title: "Demo-driven design keeps a proof of concept honest.",
-    body: "At one point the build felt stretchy, so I picked a small, real, visible bug and made everything serve that demo. The goal was to prove the idea, not to ship it, live with it, and maintain it. It is the same situation as convincing a board, or answering a stakeholder request without pulling the team off their work.",
+    body: "At one point the build started to sprawl, so I picked a small, real, visible bug and made everything serve that demo. The goal was to prove the idea, not to ship, run, and maintain a product. It is the same situation as convincing a board, or answering a stakeholder request without pulling the team off their work.",
   },
   {
     title: "Going end to end once tells you the real effort.",
-    body: "A rough proof of concept shows you what it would take to do it well, and what it would take to improve it, turn it into a product, and sell it. It matches what I see in class. A 40 minute demo can make something work, but most things take about half a day to really work, and a dedicated sprint to work pretty well. That is a useful way to estimate.",
+    body: "A rough proof of concept shows you what it would take to do it well, and what it would take to improve it, turn it into a product, and sell it. It matches what I saw across the course: a 40 minute demo can make something work, most things take about half a day to really work, and a dedicated sprint to work pretty well. That is a useful way to estimate.",
   },
 
   {
@@ -326,7 +326,7 @@ export default function AboutPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 sm:py-16">
         <article className="space-y-12">
           <header className="space-y-5">
-            <p className="text-forest font-display text-sm font-semibold">A capstone case study</p>
+            <p className="text-forest font-display text-sm font-semibold">Case study: The Agentic Product Team</p>
             <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">{TITLE}</h1>
             <p className="text-muted-foreground text-xl leading-relaxed text-pretty">
               A feedback loop where AI agents triage reports, design the fix, and ship it to a live product, with one human tap in the middle.
@@ -343,9 +343,7 @@ export default function AboutPage() {
 
           <Chapter id="short-version" tone="forest" title="The short version">
             <P>
-              POKE is a web app that grades usability test scripts. I built it with an AI coding assistant. For my capstone, the
-              assignment was to put AI agents to work running a website, so I built a small team to run POKE: a Support bot, a PM
-              bot, and a Design-Engineer bot. I’m the Director of Product. I make one decision, with one tap.
+              POKE is a web app that grades usability test scripts. I built it with Claude Code. My next step was to put AI agents to work running the product, so I built a small team to run POKE: a Support bot, a PM bot, and a Design-Engineer bot. I’m the Director of Product, and I make one decision, with one tap. It is a proof of concept for how much of product operations can be delegated, and where a human decision still earns its place.
             </P>
             <dl className="grid gap-6 py-2 sm:grid-cols-3">
               {STATS.map((s, i) => (
@@ -358,12 +356,12 @@ export default function AboutPage() {
               ))}
             </dl>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              The time is from one real ticket on October 17: I tapped Yes at 3:54 PM, and the change was live in production at 3:56 PM.
+              The time is from one real ticket on October 17: I tapped Yes at 3:54 PM, and the change was live in production at 3:56 PM. To be clear about scope, this is a proof of concept. It has handled a few dozen tickets, nearly all written by me to test it, and small changes only. It shows the loop works, not that it is ready for production traffic.
             </p>
             <Fig
               name="poke-feedback-and-decision"
               alt="Two screens side by side: POKE’s new Feedback form, and the decision page that asks me to approve or reject a recommendation."
-              caption="The two screens I added for the capstone. Users send feedback on the left. I make the decision on the right."
+              caption="The two screens I added for this project. Users send feedback on the left. I make the decision on the right."
             />
           </Chapter>
 
@@ -377,8 +375,7 @@ export default function AboutPage() {
             <P>
               I built it with Claude Code, and the app itself is AI-enabled: Claude does the grading. Along the way I gave it a
               Skill, my own opinionated interview method (one learning objective per test, unmoderated by default), and two tools
-              it can choose to use, one that drafts a test plan and one that checks the wording of each task. That was the
-              earlier part of this course. This case study is about what came next.
+              it can choose to use, one that drafts a test plan and one that checks the wording of each task. That was the first half of the project. This case study is about the second.
             </P>
             <Fig
               name="poke-grade-and-chat"
@@ -387,10 +384,9 @@ export default function AboutPage() {
             />
           </Chapter>
 
-          <Chapter id="the-capstone" tone="chartreuse" title="The capstone: build a team to run this website">
+          <Chapter id="the-challenge" tone="chartreuse" title="The challenge: a team to run the product">
             <P>
-              The ask was simple to say and hard to do. POKE had a gap: as an alpha, it had no way to hear from its users. So I
-              decided the team should work like a tiny product company.
+              The question was easy to state and hard to answer: could a small team of agents run the feedback loop of a live product? POKE had a real gap to close, since as an alpha it had no way to hear from its users. I decided the team should work like a tiny product company, with clear roles and one accountable human.
             </P>
             <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2">
               {[
@@ -457,8 +453,7 @@ export default function AboutPage() {
             <P>
               The team lives on a small server running Hermes, an open agent runtime, and talks to me through Telegram. This was
               the least glamorous part of the project: keys, configs, consoles, and spending limits. I capped each AI account with
-              a monthly limit before any bot ran. If you’ve ever wondered what DevOps looks like when an AI works through it with
-              you, it’s a lot of browser tabs.
+              a monthly limit before any bot ran. It deserved more care than it looked: every key and every spending limit is a decision about who can spend what.
             </P>
             <Fig
               name="phase-2-plan"
@@ -485,16 +480,15 @@ export default function AboutPage() {
               caption="Technically correct. Humanly unreadable: truncated titles, mixed senders, no story of one ticket."
             />
             <P>
-              My instructor’s advice was to get the first bot about 90 percent of the way before starting the next. So Claude
-              grilled me on the dials: the voice (direct and a little playful), the length (one or two sentences), what to do with
+              A principle from the course: get the first bot about 90 percent of the way before starting the next. So I had Claude interview me on the dials: the voice (direct and a little playful), the length (one or two sentences), what to do with
               vague reports, and what it’s allowed to know. Then it rebuilt the output as one clean card per ticket. Every reply opens
               with “Hey there, Poker,” and closes with a next step. That part is added by code, so it can’t be forgotten.
             </P>
             <Fig
               name="support-dials-plan"
               narrow
-              alt="Claude’s plan for refining the Support bot, listing the decisions from my grill-me session: voice, length, autonomy, vague reports, knowledge, and the card layout."
-              caption="The dials, decided in a grill-me session where Claude asked and I chose."
+              alt="Claude’s plan for refining the Support bot, listing the decisions from my interview with Claude: voice, length, autonomy, vague reports, knowledge, and the card layout."
+              caption="The dials, decided in an interview where Claude asked and I chose."
             />
             <Fig
               name="support-card"
@@ -539,7 +533,7 @@ export default function AboutPage() {
             <P>
               Then I ran it for real. I filed a ticket on the live site. Within minutes the PM had noticed it was a duplicate of another
               report and grouped them, the Support bot had replied, and a recommendation was in Telegram. The Design-Engineer had read
-              the code and found something I loved: the button people described as “greyed out” wasn’t actually disabled. Its only
+              the code and found something useful: the button people described as “greyed out” wasn’t actually disabled. Its only
               hint appeared after you clicked. The bots don’t just obey a bug report. They check it against the code.
             </P>
             <Fig
@@ -683,11 +677,11 @@ export default function AboutPage() {
 
           <Chapter id="credits" tone="chartreuse" title="Credits">
             <P>
-              This project was my capstone for the{" "}
+              I built POKE in the{" "}
               <a href="https://www.overclockaccelerator.com" className="text-forest font-medium underline underline-offset-4">
                 Overclock Accelerator
               </a>
-              . I took the course together as a cohort with the Project Management Institute (PMI) Software and AI Products team.
+              , an AI course I took as a cohort with the Project Management Institute (PMI) Software and AI Products team.
             </P>
             <P>
               The PM bot’s instructions borrow ideas from Dean Peters’ Product Manager Skills, and the Design-Engineer’s from the

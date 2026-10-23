@@ -73,11 +73,7 @@ export function PokeShell({
             <Wordmark size="sm" />
           </a>
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
-            {demoBadge && (
-              <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500">
-                Demo: canned data, no API calls
-              </span>
-            )}
+            {showPreviewPanel && <DevPreviewPanel onApply={applyPreview} onClear={handleReset} />}
             {(closed || demoBadge) && (
               <Link
                 href="/about"
@@ -178,8 +174,6 @@ export function PokeShell({
           <p className="text-muted-foreground text-sm">Poke at reality.</p>
         </div>
       </footer>
-
-      {showPreviewPanel && <DevPreviewPanel onApply={applyPreview} onClear={handleReset} />}
 
       {closed && <ClosedDialog open={closedDialogOpen} onOpenChange={setClosedDialogOpen} />}
     </div>

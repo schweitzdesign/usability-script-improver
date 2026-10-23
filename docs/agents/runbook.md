@@ -342,7 +342,7 @@ read -rsp "Paste the GitHub token: " K; echo; sed -i '/^GITHUB_DISPATCH_TOKEN=/d
 
 ## Portfolio mode: closing and reopening the alpha
 
-The capstone is done, so the live app is closed to keep running costs at zero while the demo and the case study
+The project is done, so the live app is closed to keep running costs at zero while the demo and the case study
 stay online. It is one server-side setting, read on every request.
 
 **What `PORTFOLIO_MODE=1` does** (exactly the value `1`; anything else leaves the app running):

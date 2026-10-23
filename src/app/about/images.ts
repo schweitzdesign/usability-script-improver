@@ -1,4 +1,4 @@
-// Generated from the capstone screenshots. Sensitive regions (links, email, IPs, ids) are blacked out.
+// Generated from the project screenshots. Sensitive regions (links, email, IPs, ids) are blacked out.
 // Do not edit by hand.
 export const IMAGES = {
   "poke-home": {
