@@ -74,11 +74,6 @@ export function PokeShell({
           </a>
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1">
             {showPreviewPanel && <DevPreviewPanel onApply={applyPreview} onClear={handleReset} />}
-            {demoBadge && (
-              <span className="rounded-full border border-neutral-300 bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-500">
-                Demo: canned data, no API calls
-              </span>
-            )}
             {(closed || demoBadge) && (
               <Link
                 href="/about"
