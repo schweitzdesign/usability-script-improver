@@ -23,7 +23,7 @@ The instructions are written from scratch for POKE. No text from the library is 
 this repository, and none of its files are committed here. Because the library is licensed
 for non-commercial use with share-alike terms, treat the PM instructions as a derivative of
 those ideas: credit stays with this file, and any reuse should stay non-commercial and carry
-the same license. This project is a course capstone and not commercial.
+the same license. This project came out of a course and is not commercial.
 
 ## design-engineer (ddruids)
 

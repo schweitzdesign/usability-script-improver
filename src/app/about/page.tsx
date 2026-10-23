@@ -326,7 +326,7 @@ export default function AboutPage() {
       <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-12 sm:py-16">
         <article className="space-y-12">
           <header className="space-y-5">
-            <p className="text-forest font-display text-sm font-semibold">Case study · Overclock Accelerator</p>
+            <p className="text-forest font-display text-sm font-semibold">Case study: The Agentic Product Team</p>
             <h1 className="font-display text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">{TITLE}</h1>
             <p className="text-muted-foreground text-xl leading-relaxed text-pretty">
               A feedback loop where AI agents triage reports, design the fix, and ship it to a live product, with one human tap in the middle.
@@ -343,7 +343,7 @@ export default function AboutPage() {
 
           <Chapter id="short-version" tone="forest" title="The short version">
             <P>
-              POKE is a web app that grades usability test scripts, built with Claude Code. This case study covers the second half of the project: a small team of AI agents, a Support bot, a PM bot, and a Design-Engineer bot, that runs the product’s feedback loop. I’m the Director of Product, and I make one decision, with one tap. I built it as a proof of concept for how much of product operations can be delegated, and where a human decision still earns its place.
+              POKE is a web app that grades usability test scripts. I built it with Claude Code. My next step was to put AI agents to work running the product, so I built a small team to run POKE: a Support bot, a PM bot, and a Design-Engineer bot. I’m the Director of Product, and I make one decision, with one tap. It is a proof of concept for how much of product operations can be delegated, and where a human decision still earns its place.
             </P>
             <dl className="grid gap-6 py-2 sm:grid-cols-3">
               {STATS.map((s, i) => (
@@ -677,7 +677,7 @@ export default function AboutPage() {
 
           <Chapter id="credits" tone="chartreuse" title="Credits">
             <P>
-              I built POKE as the capstone project of the{" "}
+              I built POKE in the{" "}
               <a href="https://www.overclockaccelerator.com" className="text-forest font-medium underline underline-offset-4">
                 Overclock Accelerator
               </a>

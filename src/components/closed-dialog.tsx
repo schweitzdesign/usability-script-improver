@@ -46,7 +46,7 @@ export function ClosedDialog({
                 The POKE alpha has closed.
               </Dialog.Title>
               <Dialog.Description className="text-muted-foreground text-base leading-relaxed">
-                Thanks to everyone who took part. POKE was built as a capstone project, and the alpha period is
+                Thanks to everyone who took part. POKE was built as a proof of concept, and the alpha period is
                 over, so grading and chat are switched off. You can still see how it works in the demo, or read
                 how it was built in the case study.
               </Dialog.Description>
