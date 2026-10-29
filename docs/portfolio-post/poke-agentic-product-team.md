@@ -2,7 +2,7 @@
 title: "The Agentic Product Team"
 slug: poke-agentic-product-team
 date: 2026-10-23
-summary: "I built a small team of AI agents to run the feedback loop of a live product, with me making one decision, with one tap. A proof of concept for what design leadership looks like when agents do the legwork."
+summary: "A proof of concept. I built an intelligent web application, then built a team of agents to run the live product: a customer support bot, a product manager bot, and a design engineer bot. They tee up proposed changes that I can approve with one click."
 tags: [AI, Product Design, Agents, Accessibility, Design Leadership]
 cover: poke-home-page-with-the-three-moves-section.webp
 links:
